@@ -1,4 +1,3 @@
-# GITHUB_SYNC_TEST_2026
 """
 ASTROWEATHER - observing forecast + telescope toolkit
 
