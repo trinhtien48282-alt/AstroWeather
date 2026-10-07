@@ -44,6 +44,9 @@ import warnings
 from config import (APP_NAME, CACHE_PATH, CONFIG_DIR, CONFIG_PATH, DEFAULT_CONFIG, LOG_PATH,  # noqa: F401
                     load_config, log_error, save_config)
 from mathutil import D2R, R2D, clamp, deg, mean, piecewise, rad  # noqa: F401
+from astro.core import AU_KM, altaz, gmst_deg, jd_from_ts, precess  # noqa: F401
+from astro.sun_moon import (moon_altitude, moon_info, moon_pos, next_phase_time, phase_name,  # noqa: F401
+                            sun_altitude, sun_pos)
 
 try:
     import numpy as np
@@ -62,144 +65,8 @@ ACCENT = "#1f6aa5"
 BORTLE_NELM = {1: 7.6, 2: 7.1, 3: 6.6, 4: 6.2, 5: 5.6, 6: 5.1, 7: 4.6, 8: 4.3, 9: 4.0}
 
 # ===========================================================================
-# SMALL MATH HELPERS
-# ===========================================================================
-AU_KM = 149597870.7
-
-
-# ===========================================================================
 # ASTRONOMY (pure python, no ephemeris download)
 # ===========================================================================
-def jd_from_ts(ts):
-    return ts / 86400.0 + 2440587.5
-
-
-def gmst_deg(jd):
-    d = jd - 2451545.0
-    t = d / 36525.0
-    return (280.46061837 + 360.98564736629 * d + 0.000387933 * t * t - t ** 3 / 38710000.0) % 360.0
-
-
-def altaz(ra, dec, jd, lat, lon):
-    """RA/Dec (degrees, of date) -> altitude, azimuth (degrees, azimuth from north through east)."""
-    h = rad((gmst_deg(jd) + lon - ra) % 360.0)
-    phi, d = rad(lat), rad(dec)
-    sin_alt = math.sin(phi) * math.sin(d) + math.cos(phi) * math.cos(d) * math.cos(h)
-    alt = math.asin(clamp(sin_alt, -1.0, 1.0))
-    az = math.atan2(math.sin(h), math.cos(h) * math.sin(phi) - math.tan(d) * math.cos(phi)) + math.pi
-    return deg(alt), deg(az) % 360.0
-
-
-def precess(ra, dec, jd):
-    """J2000 RA/Dec (degrees) -> RA/Dec of date (degrees)."""
-    t = (jd - 2451545.0) / 36525.0
-    zeta = rad((2306.2181 * t + 0.30188 * t * t + 0.017998 * t ** 3) / 3600.0)
-    z = rad((2306.2181 * t + 1.09468 * t * t + 0.018203 * t ** 3) / 3600.0)
-    theta = rad((2004.3109 * t - 0.42665 * t * t - 0.041833 * t ** 3) / 3600.0)
-    a, d = rad(ra), rad(dec)
-    A = math.cos(d) * math.sin(a + zeta)
-    B = math.cos(theta) * math.cos(d) * math.cos(a + zeta) - math.sin(theta) * math.sin(d)
-    C = math.sin(theta) * math.cos(d) * math.cos(a + zeta) + math.cos(theta) * math.sin(d)
-    return (deg(math.atan2(A, B) + z)) % 360.0, deg(math.asin(clamp(C, -1.0, 1.0)))
-
-
-def sun_pos(jd):
-    n = jd - 2451545.0
-    L = (280.460 + 0.9856474 * n) % 360.0
-    g = rad((357.528 + 0.9856003 * n) % 360.0)
-    lam = rad((L + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g)) % 360.0)
-    eps = rad(23.439 - 0.0000004 * n)
-    ra = math.atan2(math.cos(eps) * math.sin(lam), math.cos(lam))
-    dec = math.asin(math.sin(eps) * math.sin(lam))
-    dist = 1.00014 - 0.01671 * math.cos(g) - 0.00014 * math.cos(2 * g)
-    return {"ra": deg(ra) % 360.0, "dec": deg(dec), "lon": deg(lam) % 360.0, "dist": dist}
-
-
-def moon_pos(jd):
-    """Low-precision Moon (about 0.3 deg): good for phase, rise/set to a few minutes, sky chart."""
-    t = (jd - 2451545.0) / 36525.0
-
-    def s(a, b):
-        return math.sin(rad(a + b * t))
-
-    def c(a, b):
-        return math.cos(rad(a + b * t))
-
-    lon = (218.32 + 481267.881 * t + 6.29 * s(135.0, 477198.87) - 1.27 * s(259.3, -413335.36)
-           + 0.66 * s(235.7, 890534.22) + 0.21 * s(269.9, 954397.74) - 0.19 * s(357.5, 35999.05)
-           - 0.11 * s(186.5, 966404.03))
-    lat = (5.13 * s(93.3, 483202.02) + 0.28 * s(228.2, 960400.89) - 0.28 * s(318.3, 6003.15)
-           - 0.17 * s(217.6, -407332.21))
-    par = (0.9508 + 0.0518 * c(135.0, 477198.87) + 0.0095 * c(259.3, -413335.36)
-           + 0.0078 * c(235.7, 890534.22) + 0.0028 * c(269.9, 954397.74))
-    l, b = rad(lon), rad(lat)
-    eps = rad(23.439291 - 0.0130042 * t)
-    x = math.cos(b) * math.cos(l)
-    y = math.cos(eps) * math.cos(b) * math.sin(l) - math.sin(eps) * math.sin(b)
-    z = math.sin(eps) * math.cos(b) * math.sin(l) + math.cos(eps) * math.sin(b)
-    return {"ra": deg(math.atan2(y, x)) % 360.0, "dec": deg(math.asin(clamp(z, -1.0, 1.0))),
-            "lon": lon % 360.0, "lat": lat, "par": par, "dist": 6378.14 / math.sin(rad(par))}
-
-
-def sun_altitude(ts, lat, lon):
-    jd = jd_from_ts(ts)
-    s = sun_pos(jd)
-    return altaz(s["ra"], s["dec"], jd, lat, lon)[0]
-
-
-def moon_altitude(ts, lat, lon):
-    """Topocentric altitude of the Moon's centre (parallax applied)."""
-    jd = jd_from_ts(ts)
-    m = moon_pos(jd)
-    alt, _ = altaz(m["ra"], m["dec"], jd, lat, lon)
-    return alt - m["par"] * math.cos(rad(alt))
-
-
-def moon_info(ts, lat, lon):
-    jd = jd_from_ts(ts)
-    m, s = moon_pos(jd), sun_pos(jd)
-    psi = math.acos(clamp(math.cos(rad(m["lat"])) * math.cos(rad(m["lon"] - s["lon"])), -1.0, 1.0))
-    rs = s["dist"] * AU_KM
-    inc = math.atan2(rs * math.sin(psi), m["dist"] - rs * math.cos(psi))
-    angle = (m["lon"] - s["lon"]) % 360.0
-    alt, az = altaz(m["ra"], m["dec"], jd, lat, lon)
-    alt -= m["par"] * math.cos(rad(alt))
-    return {"illum": (1.0 + math.cos(inc)) / 2.0, "angle": angle, "age": angle / 360.0 * 29.530588,
-            "alt": alt, "az": az, "dist_km": m["dist"], "name": phase_name(angle),
-            "ang_diam": deg(2 * math.atan(1737.4 / m["dist"])) * 3600.0}
-
-
-def phase_name(angle):
-    names = ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", "Full Moon",
-             "Waning Gibbous", "Last Quarter", "Waning Crescent"]
-    return names[int(((angle + 22.5) % 360.0) // 45.0)]
-
-
-def next_phase_time(ts, target_angle):
-    """Next time the Moon-Sun ecliptic angle reaches target_angle (0 new, 90 FQ, 180 full, 270 LQ)."""
-    def f(t):
-        jd = jd_from_ts(t)
-        ang = (moon_pos(jd)["lon"] - sun_pos(jd)["lon"]) % 360.0
-        return ((ang - target_angle + 180.0) % 360.0) - 180.0
-
-    step = 3 * 3600.0
-    t, prev = ts, f(ts)
-    for _ in range(int(36 * 86400 / step)):
-        t2 = t + step
-        cur = f(t2)
-        if prev < 0 <= cur and (cur - prev) < 90:
-            lo, hi = t, t2
-            for _ in range(30):
-                mid = (lo + hi) / 2
-                if f(mid) < 0:
-                    lo = mid
-                else:
-                    hi = mid
-            return hi
-        t, prev = t2, cur
-    return None
-
-
 # JPL "Keplerian elements for approximate positions" (1800-2050): value, rate per century
 PLANET_ELEMENTS = {
     "Mercury": ((0.38709927, 0.00000037), (0.20563593, 0.00001906), (7.00497902, -0.00594749),
