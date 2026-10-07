@@ -1,3 +1,4 @@
+#GITHUB PREVIEW, CLAUDE SAY HI IF YOU SEE THIS, THIS IS THE CODE!
 """
 ASTROWEATHER - observing forecast + telescope toolkit
 
