@@ -40,6 +40,10 @@ from tkinter import messagebox
 import importlib.util
 import warnings
 
+from config import (APP_NAME, CACHE_PATH, CONFIG_DIR, CONFIG_PATH, DEFAULT_CONFIG, LOG_PATH,  # noqa: F401
+                    load_config, log_error, save_config)
+from mathutil import D2R, R2D, clamp, deg, mean, piecewise, rad  # noqa: F401
+
 try:
     import numpy as np
 except Exception:  # optional: the pure-Python engine keeps every original feature working
@@ -50,110 +54,16 @@ HAVE_ASTROPY = importlib.util.find_spec("astropy") is not None  # imported lazil
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
-APP_NAME = "AstroWeather"
-CONFIG_DIR = os.path.join(os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), ".config"), APP_NAME)
-CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
-CACHE_PATH = os.path.join(CONFIG_DIR, "cache.json")
-LOG_PATH = os.path.join(CONFIG_DIR, "error.log")
-
 CARD = "#1b1b1b"
 DEEP = "#0b1020"
 ACCENT = "#1f6aa5"
 
 BORTLE_NELM = {1: 7.6, 2: 7.1, 3: 6.6, 4: 6.2, 5: 5.6, 6: 5.1, 7: 4.6, 8: 4.3, 9: 4.0}
 
-DEFAULT_CONFIG = {
-    "location": {"name": "Ca Mau, Vietnam", "lat": 9.1769, "lon": 105.1524},
-    "units": {"temp": "C", "wind": "km/h"},
-    "bortle": 5,
-    "auto_refresh_min": 30,
-    "perf": {"numpy": True, "astropy": False},
-    "planner": {"min_alt": 30, "kind": "All targets"},
-    "camera": {"preset": "Custom"},
-    "scope": {"name": "D76F700", "aperture": 76.0, "focal_length": 700.0, "obstruction_mm": 0.0, "mount": "AZ"},
-    "eyepieces": [
-        {"name": "20 mm", "fl": 20.0, "afov": 35.0},
-        {"name": "12.5 mm", "fl": 12.5, "afov": 35.0},
-        {"name": "4 mm", "fl": 4.0, "afov": 35.0},
-    ],
-    "barlows": [
-        {"name": "1.5x Barlow", "factor": 1.5},
-        {"name": "2x Barlow", "factor": 2.0},
-    ],
-}
-
-
-def log_error(msg):
-    try:
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        with open(LOG_PATH, "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
-    except OSError:
-        pass
-
-
-def load_config():
-    cfg = copy.deepcopy(DEFAULT_CONFIG)
-    try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            loaded = json.load(f)
-        for key, default in DEFAULT_CONFIG.items():
-            if key in loaded:
-                if isinstance(default, dict) and isinstance(loaded[key], dict):
-                    cfg[key].update(loaded[key])
-                else:
-                    cfg[key] = loaded[key]
-    except FileNotFoundError:
-        pass
-    except Exception as e:
-        log_error(f"config load failed: {e}")
-    return cfg
-
-
-def save_config(cfg):
-    try:
-        os.makedirs(CONFIG_DIR, exist_ok=True)
-        tmp = CONFIG_PATH + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2)
-        os.replace(tmp, CONFIG_PATH)
-    except Exception as e:
-        log_error(f"config save failed: {e}")
-
-
 # ===========================================================================
 # SMALL MATH HELPERS
 # ===========================================================================
-D2R = math.pi / 180.0
-R2D = 180.0 / math.pi
 AU_KM = 149597870.7
-
-
-def rad(x):
-    return x * D2R
-
-
-def deg(x):
-    return x * R2D
-
-
-def clamp(x, lo=0.0, hi=100.0):
-    return max(lo, min(hi, x))
-
-
-def piecewise(x, pts):
-    """Linear interpolation through (x, y) points; clamps outside the range."""
-    if x <= pts[0][0]:
-        return pts[0][1]
-    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-        if x <= x1:
-            return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
-    return pts[-1][1]
-
-
-def mean(vals):
-    vals = [v for v in vals if v is not None]
-    return sum(vals) / len(vals) if vals else None
 
 
 # ===========================================================================
