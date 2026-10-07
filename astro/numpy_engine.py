@@ -5,7 +5,8 @@ The scalar functions stay as the fallback (NumPy missing or switched off) and as
 versions are tested against. NumPy is optional: without it this module still imports, HAVE_NUMPY is False and
 the scan/event/star helpers use the pure-Python path.
 
-Depends on astro.catalog, astro.core, astro.planets, astro.sun_moon (never on main, config or any GUI).
+Depends on astro.catalog, astro.core, astro.planets, astro.sun_moon and astronomy.scoring (MOON_K, ang_sep);
+never on main, config or any GUI.
 """
 import math
 
@@ -13,6 +14,7 @@ from astro.catalog import BRIGHT_STARS, CATALOG
 from astro.core import AU_KM, altaz, jd_from_ts, precess
 from astro.planets import PLANET_DIAM_KM, PLANET_ELEMENTS, find_events, planet_state
 from astro.sun_moon import moon_altitude, sun_altitude
+from astronomy.scoring import MOON_K, ang_sep
 
 try:
     import numpy as np
@@ -117,6 +119,15 @@ def np_moon_state(jd, lat, lon):
     inc = np.arctan2(rs * np.sin(psi), m["dist"] - rs * np.cos(psi))
     alt, az = np_altaz(m["ra"], m["dec"], jd, lat, lon)
     return m, (1.0 + np.cos(inc)) / 2.0, alt - m["par"] * np.cos(np.radians(alt)), az
+
+
+def np_moon_drop(illum, alt, sep):
+    a = np.degrees(np.arccos(np.clip(2.0 * illum - 1.0, -1.0, 1.0)))
+    flux = 10.0 ** (-0.4 * (0.026 * a + 4e-9 * a ** 4))
+    c2 = np.cos(np.radians(sep)) ** 2
+    sepf = (10 ** 5.36 * (1.06 + c2) + 10 ** (6.15 - sep / 40.0)) / (10 ** 5.36 * 2.06 + 10 ** 6.15)
+    r = MOON_K * flux * sepf * np.sin(np.radians(np.maximum(alt, 0.0))) ** 0.7
+    return np.where(alt > 0, 1.4 * np.log10(1.0 + r), 0.0)
 
 
 def _np_kepler(m_deg, e):
@@ -256,3 +267,19 @@ def star_altaz(jd, lat, lon):
         alts.append(a)
         azs.append(z)
     return alts, azs
+
+
+def catalog_altaz_sep(jd, lat, lon, mpos):
+    """Alt, az and Moon separation for every catalog object at one instant."""
+    if use_numpy():
+        ra, dec = np_precess(CAT_RA, CAT_DEC, jd)
+        alt, az = np_altaz(ra, dec, jd, lat, lon)
+        return alt.tolist(), az.tolist(), np_sep(ra, dec, mpos["ra"], mpos["dec"]).tolist()
+    alts, azs, seps = [], [], []
+    for o in CATALOG:
+        ra, dec = precess(o["ra"] * 15.0, o["dec"], jd)
+        a, z = altaz(ra, dec, jd, lat, lon)
+        alts.append(a)
+        azs.append(z)
+        seps.append(ang_sep(ra, dec, mpos["ra"], mpos["dec"]))
+    return alts, azs, seps
