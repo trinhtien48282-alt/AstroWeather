@@ -581,25 +581,67 @@ If a test cannot be run, explicitly say so.
 
 Git is the rollback mechanism.
 
+The local AstroWeather repository is located at:
+
+`C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather`
+
+Whenever giving Git instructions to the user, always begin with:
+
+```powershell
+cd "C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather"
+```
+
+After each completed and verified refactoring stage, provide the exact Git commands the user should run, including the `cd` command above.
+
 Before changes:
 
-`git status`
+```powershell
+cd "C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather"
+git status
+```
 
 After changes:
 
-`git diff`
+```powershell
+cd "C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather"
+git diff
+```
 
-After a successful stage, recommend a commit such as:
+After a successful stage, recommend an appropriate commit such as:
 
-`git commit -m "Refactor: extract configuration and shared utilities"`
+```powershell
+cd "C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather"
+git add .
+git commit -m "Refactor: extract configuration and shared utilities"
+```
 
-Do not reset, revert, delete, or overwrite user work unless explicitly instructed.
+If the user asks how to push the completed stage, provide the exact push command appropriate to the user's current branch.
 
-Never use destructive Git commands as a shortcut.
+If branch state is relevant, first inspect it with:
+
+```powershell
+cd "C:\Users\Dell\Documents\VS Code Projects\Akaruis Toolbox\AstroWeather"
+git branch --show-current
+git status
+```
+
+Do not assume the branch name. Use the branch name actually reported by Git.
 
 Do not automatically push commits unless explicitly instructed.
 
----
+Do not reset, revert, delete, force-push, or overwrite user work unless explicitly instructed.
+
+Never use destructive Git commands as a shortcut.
+
+When a stage is complete, clearly separate:
+
+1. What Claude changed.
+2. What the user must do locally.
+3. The exact Git commands to run.
+4. Whether pushing is optional or explicitly requested.
+
+Do not claim a commit or push happened unless it was actually performed and verified.
+
 
 # COMMUNICATION FORMAT
 
