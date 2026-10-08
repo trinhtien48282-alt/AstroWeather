@@ -61,6 +61,8 @@ from astro.numpy_engine import catalog_altaz_sep, np_moon_drop  # noqa: F401
 from astronomy.scoring import (BORTLE_NELM, MOON_K, ang_sep, moon_drop, moon_flux_rel, moon_score_from_drop,  # noqa: F401
                                moon_sepf, score_dew, score_seeing, score_transparency, score_wind,
                                seeing_fwhm, seeing_label, sky_nelm, verdict)
+from astronomy.camera import PHONE_PRESETS, camera_numbers  # noqa: F401
+from astronomy.optics import build_combos, drift_seconds, fmt_angle, quality_note, scope_numbers  # noqa: F401
 
 HAVE_ASTROPY = importlib.util.find_spec("astropy") is not None  # imported lazily, only if enabled
 
@@ -258,33 +260,6 @@ def planet_rows(lat, lon, win):
                          "elong": st["elong"] * (1 if st["east"] else -1), "best_alt": best[0], "best_ts": best[1],
                          "vis": (vis[0], vis[-1]) if vis else None})
     return rows
-
-
-def build_combos(scope, eyepieces, barlows):
-    ap, fl = float(scope["aperture"]), float(scope["focal_length"])
-    options = [("", 1.0)] + [(b["name"], float(b["factor"])) for b in barlows]
-    combos = []
-    for ep in eyepieces:
-        for bname, bf in options:
-            mag = fl * bf / float(ep["fl"])
-            combos.append({"label": ep["name"] + (f" + {bname}" if bname else ""), "mag": mag,
-                           "pupil": ap / mag, "tfov": float(ep["afov"]) / mag, "barlow": bf})
-    combos.sort(key=lambda c: c["mag"])
-    return combos
-
-
-def quality_note(mag, pupil, ap):
-    if pupil > 7.0:
-        return "pupil > 7 mm (light wasted)"
-    if pupil > 4.5:
-        return "widest field / big targets"
-    if pupil > 2.0:
-        return "general viewing"
-    if pupil > 1.0:
-        return "high power: Moon, planets"
-    if mag <= 2.0 * ap:
-        return "very high: needs steady air"
-    return "beyond useful magnification"
 
 
 def suggest_combo(obj, combos, ap, cap):
@@ -854,62 +829,12 @@ def engine_check(lat, lon, now_ts, elev=0.0):
 
 
 # ===========================================================================
-# TELESCOPE / OPTICS MATH
-# ===========================================================================
-def scope_numbers(sc, nelm):
-    ap, fl = float(sc["aperture"]), float(sc["focal_length"])
-    obs = float(sc.get("obstruction_mm", 0) or 0)
-    ap_eff = math.sqrt(max(ap * ap - obs * obs, 1.0))
-    return {"ap": ap, "fl": fl, "obs": obs, "ap_eff": ap_eff, "f": fl / ap,
-            "min_mag": ap / 7.0, "max_mag": 2.0 * ap, "comfort": 1.5 * ap,
-            "dawes": 116.0 / ap, "rayleigh": 138.0 / ap, "gather": (ap_eff / 7.0) ** 2,
-            "lim": nelm + 5.0 * math.log10(ap_eff / 7.0), "lim_ideal": 6.5 + 5.0 * math.log10(ap_eff / 7.0),
-            "scale_mm": 206265.0 / fl, "moon_mm": fl * math.tan(rad(0.52)), "airy": 2.44 * 0.55e-3 * (fl / ap)}
-
-
-def drift_seconds(tfov_deg, dec_deg):
-    return tfov_deg * 3600.0 / (15.041 * max(0.05, math.cos(rad(dec_deg))))
-
-
-def camera_numbers(fl, ap, pixel_um, w_px, h_px, fwhm, dec):
-    scale = 206.265 * pixel_um / fl
-    n = fl / ap
-    return {"scale": scale, "fov_w": scale * w_px / 3600.0, "fov_h": scale * h_px / 3600.0, "n": n,
-            "sampling": fwhm / scale if scale > 0 else 0.0,
-            "npf": (16.856 * n + 0.0997 * fl + 13.713 * pixel_um) / (fl * max(0.05, math.cos(rad(dec)))),
-            "rule500": 500.0 / fl, "ideal_lo": 3.0 * pixel_um, "ideal_hi": 5.0 * pixel_um}
-
-
-def fmt_angle(arcsec):
-    if arcsec >= 3600:
-        return f"{arcsec / 3600.0:.3g} deg"
-    if arcsec >= 60:
-        return f"{arcsec / 60.0:.3g} arcmin"
-    return f"{arcsec:.3g} arcsec"
-
-
-# ===========================================================================
 # UI
 # ===========================================================================
 ALT_W, ALT_H = 600, 300
 ALT_BANDS = ["#3d6a9e", "#2a3a6a", "#1a2650", "#101a3a", "#0a0d18"]
 ALT_COLORS = ["#5ec8ff", "#ff9f5e", "#7ee787", "#ff7ab8", "#c9a7ff", "#f2e05e", "#6fe3d0", "#ff6b6b"]
 CAM_MODES = ["Prime focus (camera at the focuser)", "Phone at the eyepiece (afocal)"]
-PHONE_PRESETS = {
-    "Custom": None,
-    "iPhone XS Max - wide 12 MP (f/1.8)": {"pix": 1.4, "w": 4032, "h": 3024, "lens": 4.25, "fno": 1.8,
-                                           "note": "Best all-round lens for the eyepiece. 1.4 um pixels, about 4.25 mm real focal length."},
-    "iPhone XS Max - telephoto 12 MP (f/2.4)": {"pix": 1.0, "w": 4032, "h": 3024, "lens": 6.0, "fno": 2.4,
-                                                "note": "2x lens: fills the eyepiece circle better, smaller entrance pupil."},
-    "iPhone 16 Pro Max - main 48 MP (f/1.8)": {"pix": 1.22, "w": 8064, "h": 6048, "lens": 6.8, "fno": 1.78,
-                                               "note": "48 MP mode (ProRAW/HEIF). Pixels are tiny: expect them to oversample, bin to 12 MP for the Moon and planets."},
-    "iPhone 16 Pro Max - main 12 MP binned": {"pix": 2.44, "w": 4032, "h": 3024, "lens": 6.8, "fno": 1.78,
-                                              "note": "2x2 binned: 2.44 um effective pixels, cleaner for planets and the Moon."},
-    "iPhone 16 Pro Max - ultra wide 48 MP (f/2.2)": {"pix": 0.7, "w": 8064, "h": 6048, "lens": 2.1, "fno": 2.2,
-                                                    "note": "Very wide and tiny pixels: usually vignettes badly at an eyepiece."},
-    "iPhone 16 Pro Max - 5x telephoto 12 MP (f/2.8)": {"pix": 1.12, "w": 4032, "h": 3024, "lens": 15.6, "fno": 2.8,
-                                                      "note": "Long lens: great at filling the frame with a 20 mm eyepiece, but a larger exit pupil match is needed."},
-}
 BAND_COLORS = ["#d8b24a", "#b9783c", "#455a8f", "#27345f", "#0f1630"]
 BAND_NAMES = ["day", "civil twilight", "nautical twilight", "astronomical twilight", "full night"]
 HEAT_ROWS = [("Light", "band"), ("Moon altitude", "moon"), ("Cloud total %", "cloud"), ("   low %", "low"),
