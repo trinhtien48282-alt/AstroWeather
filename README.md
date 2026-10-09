@@ -1,167 +1,156 @@
 # AstroWeather 🌌
 
-**AstroWeather** is a desktop astronomy planning and observing assistant built with Python and CustomTkinter.
+**A desktop astronomy planning and observing assistant built with Python.**
 
-It combines astronomy calculations, observing-condition analysis, telescope/camera calculations, weather information, and observation planning into one application.
+AstroWeather brings astronomical calculations, observing-condition estimates, weather forecasts, telescope and camera tools, and observation planning together in one desktop application.
 
-> **AI-assisted development:** AstroWeather is a personal, AI-assisted (“vibe-coded”) project. AI tools are used during development, including for code generation, refactoring, debugging, and documentation. The resulting code is reviewed, tested, and integrated by the project author. This project is experimental and may contain bugs or inaccuracies.
+The goal is simple: help amateur astronomers decide **what to observe, when to observe it, and what conditions to expect**.
 
+> [!WARNING]
+> **Experimental software:** AstroWeather is a personal, AI-assisted project currently under active development. AI tools are used for code generation, refactoring, debugging, and documentation. Changes are reviewed, tested, and integrated by the project author, but the application may still contain bugs, numerical inaccuracies, or incomplete features. Astronomy calculations and observing-condition estimates should be treated as informational rather than authoritative.
 
-> 🚧 **Development status:** AstroWeather is currently undergoing a staged refactor from a large monolithic Python application into a modular architecture.
+> [!NOTE]
+> **Development status:** AstroWeather is being refactored from a monolithic Python application into a modular architecture. Features and internal interfaces may change during development.
 
 ---
 
 ## ✨ Features
 
-### 🔭 Astronomy
+### 🔭 Astronomy engine
 
 * Sun and Moon position calculations
-* Moon phase and illumination information
+* Lunar phase and illumination information
 * Planetary positions and orbital calculations
-* Altitude / azimuth calculations
+* Altitude and azimuth calculations
 * Coordinate precession
 * Sidereal time calculations
 * Stellar and deep-sky catalog support
 * Angular separation calculations
 
-### 🌤️ Observing Conditions
+### 🌤️ Observing conditions
 
-* Seeing estimation
+Evaluate conditions that may affect a night of observing:
+
+* Seeing estimates
 * Transparency assessment
 * Dew and wind considerations
 * Limiting-magnitude estimation
 * Moonlight interference
 * Overall observing-condition scoring
 
-### 🔬 Telescope & Camera Calculations
+These are estimates, not substitutes for direct observations or professional meteorological measurements.
+
+### 🔬 Telescope and camera tools
+
+Explore how your equipment affects what you can observe or photograph:
 
 * Telescope magnification
 * Exit pupil
-* Field of view
+* True field of view
 * Angular resolution
 * Image scale
 * Camera sampling
 * Planetary image-size estimation
 * Astrophotography calculations
 
-### 🗓️ Observation Planning
+### 🗓️ Observation planning
 
-* Target visibility
+* Target visibility analysis
 * Altitude tracking
 * Observation scheduling
 * Target suitability analysis
 
-### 🌦️ Weather
+### 🌦️ Weather and location
 
-* Weather information
-* Forecast analysis
-* Location/geocoding support
+* Weather information and forecast analysis
+* Location and geocoding support
+* Weather-aware observing preparation
 
-### ⚙️ Performance
+### ⚡ Flexible calculation engine
 
-AstroWeather supports both:
+AstroWeather supports:
 
-* Pure-Python astronomy calculations
-* Optional NumPy-accelerated calculations
+* **Pure Python:** scalar calculation paths without NumPy
+* **Optional NumPy acceleration:** faster calculation paths where supported
 
-The application is designed to retain a scalar fallback when NumPy is unavailable.
-
----
-
-## 🧭 Project Structure
-
-AstroWeather is being refactored in stages to separate astronomy calculations, data, observing analysis, GUI code, and application infrastructure.
-
-The intended architecture is roughly:
-
-```text
-AstroWeather/
-├── main.py
-├── config.py
-├── mathutil.py
-│
-├── astro/
-│   ├── core.py
-│   ├── sun_moon.py
-│   ├── planets.py
-│   ├── catalog.py
-│   └── numpy_engine.py
-│
-├── astronomy/
-│   ├── scoring.py
-│   ├── optics.py
-│   └── camera.py
-│
-├── weather/
-│   ├── api.py
-│   ├── analysis.py
-│   └── geocoding.py
-│
-├── planner/
-│   └── planner.py
-│
-└── gui/
-    ├── app.py
-    ├── forecast.py
-    ├── planner_page.py
-    ├── settings_page.py
-    ├── calculators_page.py
-    ├── altitude_graph.py
-    └── widgets.py
-```
-
-The exact final structure may change as the refactoring progresses.
-
----
-
-## 🔧 Refactoring Roadmap
-
-The application is being modularized through several controlled stages:
-
-| Stage | Area                                           |
-| ----- | ---------------------------------------------- |
-| 0     | Inspection and dependency mapping              |
-| 1     | Configuration and shared utilities             |
-| 2     | Astronomy core + Sun/Moon                      |
-| 3     | Planets + catalog                              |
-| 4     | NumPy astronomy engine                         |
-| 5     | Observing conditions + scoring                 |
-| 6     | Telescope + camera calculations                |
-| 7     | Weather + observation planner                  |
-| 8     | GUI extraction and final application structure |
-
-Each stage is intended to preserve existing behavior and numerical results while reducing the responsibilities of `main.py`.
+NumPy is optional, and the application is designed to retain a pure-Python fallback.
 
 ---
 
 ## 🖥️ Technology
 
-* **Python**
-* **CustomTkinter**
-* **Tkinter**
-* **NumPy** (optional acceleration)
-* Standard Python libraries for configuration, networking, threading, and application infrastructure
+| Component                       | Technology                |
+| ------------------------------- | ------------------------- |
+| Language                        | Python                    |
+| Desktop interface               | CustomTkinter, Tkinter    |
+| Optional numerical acceleration | NumPy                     |
+| Weather data                    | Open-Meteo                |
+| Configuration and local data    | Standard Python libraries |
 
 ---
 
-## 🔭 Default Equipment Profile
+## 🚀 Getting started
 
-AstroWeather currently includes a default observing setup based around:
+### Requirements
 
-* **Telescope:** 76 mm aperture / 700 mm focal length
-* **Mount:** Alt-azimuth
-* **Eyepieces:** 20 mm, 12.5 mm, 4 mm
-* **Eyepiece AFOV:** 35°
-* **Barlows:** 1.5× and 2×
-* **Camera:** Custom configuration
+* Python compatible with the project's current dependencies
+* Windows or another environment capable of running Tkinter, subject to compatibility testing
+* An internet connection for online weather and geocoding features
+* NumPy is optional
 
-The equipment settings can be changed inside the application.
+### 1. Clone the repository
+
+```powershell
+git clone https://github.com/trinhtien48282-alt/AstroWeather.git
+cd AstroWeather
+```
+
+### 2. Install dependencies
+
+Install the main GUI dependency:
+
+```powershell
+python -m pip install customtkinter
+```
+
+For optional NumPy acceleration:
+
+```powershell
+python -m pip install numpy
+```
+
+Install any additional dependencies required by the current version of the project.
+
+### 3. Launch the application
+
+```powershell
+python main.py
+```
+
+If the application fails to start, check the installed Python version and dependencies, then review any error output or application logs.
+
+> [!TIP]
+> Run these commands from the repository directory. A virtual environment is recommended for development to keep project dependencies separate from other Python applications.
 
 ---
 
-## 📍 Default Location
+## 🔭 Default observing profile
 
-The default observing location is configured for:
+AstroWeather includes a default equipment profile that can be adjusted in the application.
+
+| Setting                         | Default              |
+| ------------------------------- | -------------------- |
+| Telescope aperture              | 76 mm                |
+| Telescope focal length          | 700 mm               |
+| Mount type                      | Alt-azimuth          |
+| Eyepieces                       | 20 mm, 12.5 mm, 4 mm |
+| Eyepiece apparent field of view | 35°                  |
+| Barlow lenses                   | 1.5× and 2×          |
+| Camera                          | Custom configuration |
+
+These values are a starting profile, not a requirement. Actual observing results depend on the equipment, atmospheric conditions, target, and observing technique.
+
+## 📍 Default observing location
 
 **Cà Mau, Vietnam**
 
@@ -169,67 +158,68 @@ The application is designed to support changing the observing location and coord
 
 ---
 
-## 🚀 Running AstroWeather
+## 🧱 Project architecture
 
-Clone the repository and enter the project directory:
+AstroWeather is being organized into modules with distinct responsibilities:
 
-```powershell
-git clone <repository-url>
-cd AstroWeather
-```
+* `astro/` contains core astronomical calculations and related engines.
+* `astronomy/` contains observing-condition scoring and telescope/camera calculations.
+* `weather/` handles weather data, forecast analysis, and geocoding.
+* `planner/` contains observation-planning logic.
+* `gui/` is the planned home for the desktop interface as GUI extraction progresses.
+* `main.py` remains the application entry point.
 
-Run the application with:
-
-```powershell
-python main.py
-```
-
-### Optional NumPy support
-
-If NumPy is installed, AstroWeather can use its accelerated calculation paths where supported.
-
-```powershell
-pip install numpy
-```
+The exact module layout may evolve as the refactor progresses. Consult the repository itself for the current implementation rather than treating a proposed structure as a guarantee.
 
 ---
 
-## 🧪 Development Philosophy
+## 🛠️ Development and refactoring
 
-AstroWeather prioritizes:
+AstroWeather is being refactored in small, controlled stages to improve maintainability while preserving the original application's behavior.
 
-* **Numerical correctness**
-* **Preservation of existing behavior**
-* **Small, isolated refactoring stages**
-* **Clear separation of responsibilities**
-* **Optional performance optimizations**
-* **Minimal unnecessary dependencies**
+| Stage | Scope                                    |
+| ----: | ---------------------------------------- |
+|     0 | Code inspection and dependency mapping   |
+|     1 | Configuration and shared utilities       |
+|     2 | Astronomy core and Sun/Moon calculations |
+|     3 | Planetary calculations and catalogs      |
+|     4 | NumPy astronomy engine                   |
+|     5 | Observing-condition scoring              |
+|     6 | Telescope and camera calculations        |
+|     7 | Weather and observation planning         |
+|     8 | GUI extraction and application structure |
 
-Refactoring should not change astronomy formulas simply for the sake of restructuring the code.
+The guiding rule is **preserve behavior first, restructure second**. Refactoring should not change established formulas or numerical results simply to make the code look cleaner.
 
-Each major refactoring stage should be verified before moving to the next one.
+### Development priorities
+
+* Numerical consistency and correctness
+* Clear separation of responsibilities
+* Small, verifiable changes
+* Minimal unnecessary dependencies
+* Optional performance optimizations
+* Easier debugging, testing, and future maintenance
 
 ---
 
-## 📌 Project Status
+## 📦 Packaging
 
-AstroWeather is actively under development.
+Standalone application packaging is a planned or in-progress development task. Check the latest repository files and releases for the current packaging status and any available packaged builds.
 
-The current priority is **modularization and architectural cleanup** rather than adding large numbers of new features.
+---
 
-The long-term goal is to make the application easier to:
+## 🗺️ Project status
 
-* understand
-* debug
-* test
-* extend
-* optimize
-* maintain
+AstroWeather is an experimental personal project under active development.
 
-without sacrificing the functionality of the original application.
+The current focus is improving the codebase's architecture and maintainability while retaining the application's existing functionality. Future work may include further testing, packaging improvements, and additional astronomy-planning tools.
+
+Contributions, bug reports, and suggestions are welcome, but please remember that the project and its interfaces may change during development.
 
 ---
 
 ## 📜 License
 
-License information will be added when the project's licensing decision is finalized.
+**No license has been specified yet.**
+
+Until a license is added to the repository, do not assume that the code is available for unrestricted reuse, redistribution, or modification.
