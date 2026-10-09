@@ -517,43 +517,191 @@ After completion:
 
 ---
 
-# STAGE 8: GUI EXTRACTION
+# STAGE 8: GUI EXTRACTION + PYINSTALLER PACKAGING
 
-Only after the domain/calculation layers have been sufficiently separated should GUI modules be extracted.
+## Context
 
-Potential destinations, depending on the actual repository:
+This is the final planned refactoring stage for AstroWeather.
 
-`gui/app.py`
+The project has already extracted its domain and calculation layers into modules such as:
 
-`gui/forecast.py`
+* `astro/`
+* `astronomy/`
+* `mathutil/`
+* `weather/`
+* `planner/`
 
-`gui/planner_page.py`
+The Python application uses CustomTkinter. NumPy is used for calculation and planner functionality. Astropy is optional.
 
-`gui/settings_page.py`
+The goal is to finish separating the GUI from the calculation/domain layers, reduce `main.py` to a small application entry point/controller, and prepare a distributable Windows application using **PyInstaller**.
 
-`gui/calculators_page.py`
+## Critical rules
 
-`gui/altitude_graph.py`
+* Python behavior is the behavioral reference.
+* Do not rewrite formulas, change calculations, or improve existing behavior during extraction.
+* Do not delete `main.py`. Keep it as the application entry point.
+* Do not blindly create every suggested GUI module.
+* Inspect the actual repository and current Git state before making changes.
+* Preserve existing application behavior, configuration, cache, logging, threading, event queues, and error handling.
+* Do not modify unrelated files.
+* Do not commit or push changes unless explicitly requested.
+* Do not proceed if a prerequisite stage is missing or the repository is in an unexpected state.
+* Make small, verifiable changes and report the exact files changed.
+* Do not claim tests passed unless they were actually executed.
 
-`gui/widgets.py`
+## Part A: Inspect the repository
 
-Do not blindly create every file above.
+Before editing:
 
-Create only modules justified by the actual code.
+1. Inspect `git status`, the current branch, and recent commits.
+2. Inspect the actual `main.py`, existing package structure, and imports.
+3. Confirm the status of Stages 1–7 and identify any incomplete or untracked artifacts.
+4. Inspect GUI responsibilities and their dependencies.
+5. Identify which methods, widgets, and callbacks can be moved without changing behavior.
 
-Move GUI responsibilities carefully.
+Do not overwrite, delete, or blindly regenerate existing files.
 
-The GUI may call domain/calculation modules, but domain/calculation modules must not depend on GUI widgets.
+If the repository is inconsistent or a prerequisite is incomplete, STOP and report the problem before editing.
 
-The final goal is for `main.py` to become a small application entry point/controller rather than a 3,200-line everything-file.
+## Part B: GUI extraction
 
-After completion:
+Create only GUI modules justified by the actual code. Potential destinations include:
 
-* run syntax/import checks
-* launch the application when practical
-* verify major pages/features
-* inspect the diff
-* STOP
+* `gui/app.py`
+* `gui/forecast.py`
+* `gui/planner_page.py`
+* `gui/settings_page.py`
+* `gui/calculators_page.py`
+* `gui/altitude_graph.py`
+* `gui/widgets.py`
+
+These are suggestions, not mandatory files.
+
+### Architecture rules
+
+* GUI modules may import and call domain/calculation modules.
+* Domain/calculation modules must not depend on GUI widgets.
+* Preserve existing method signatures and callback behavior wherever practical.
+* Preserve CustomTkinter widget configuration, layouts, theme behavior, and user-visible text.
+* Preserve threading, worker lifecycle, event queues, and UI-thread boundaries.
+* Preserve settings, configuration persistence, caches, and error logging.
+* Avoid circular imports.
+* Avoid introducing unnecessary abstractions or rewriting working code.
+* Keep `main.py` as a small entry point/controller that initializes and connects the application.
+
+Do not move code merely to reduce line count if doing so creates fragile dependencies.
+
+## Part C: PyInstaller packaging
+
+Use **PyInstaller** as the required packaging solution.
+
+The finished project must support building a Windows distribution that runs on a machine where Python is not installed.
+
+### Packaging requirements
+
+1. Inspect the actual imports and runtime resources before configuring PyInstaller.
+2. Add a reproducible PyInstaller configuration, preferably a `.spec` file, rather than relying on undocumented manual build steps.
+3. Include the Python runtime and all required third-party dependencies.
+4. Include all required project packages and runtime assets.
+5. Handle CustomTkinter's package resources and theme files correctly.
+6. Include NumPy and its required binary/runtime dependencies.
+7. Treat Astropy according to its existing optional-dependency behavior. Do not silently make an optional dependency mandatory or remove an existing fallback.
+8. Preserve access to configuration, cache, and log files using the application's existing paths. User data must not be written into a potentially read-only installation directory.
+9. Ensure resource paths work in both normal Python execution and the packaged application.
+10. Do not download Python, NumPy, or other dependencies dynamically on the end user's first launch. Bundle dependencies during the build.
+11. Do not bundle API keys, credentials, local secrets, developer-specific paths, or unrelated files.
+12. Prefer a windowed application build if the current GUI is intended to run without a console. Provide a documented diagnostic build or troubleshooting instructions if needed.
+
+### Distribution format
+
+Start with a PyInstaller `onedir` build unless repository-specific constraints justify another approach.
+
+The initial deliverable should be a self-contained application directory that can be tested reliably. A single-file executable or installer can be considered later and must not compromise correctness.
+
+Document:
+
+* Required build environment.
+* How to install build dependencies.
+* The exact build command.
+* Where the resulting application is produced.
+* How to distribute it.
+* Known limitations and optional dependencies.
+
+Use a dedicated build environment where practical. Do not pollute or replace the developer's existing Python environment unnecessarily.
+
+## Part D: Validation
+
+Perform the checks that are practical in the current environment.
+
+### Source checks
+
+* Compile `main.py` and the new GUI modules.
+* Import the new modules in a fresh interpreter.
+* Check for circular imports and accidental GUI dependencies in domain modules.
+* Inspect the diff for unintended changes.
+* Run the project's existing tests, if any.
+* Run `git diff --check`.
+
+### Application checks
+
+Launch the application when practical and verify:
+
+* Application startup.
+* Forecast page.
+* Planner page.
+* Settings page.
+* Calculator pages, if present.
+* Altitude graph, if present.
+* Existing configuration and cache behavior.
+* Existing error handling and weather-fetch behavior.
+
+Do not claim a feature was tested if it was not actually exercised.
+
+### Packaging checks
+
+1. Build the application using the committed PyInstaller configuration.
+2. Confirm the build completes and the expected executable and support files exist.
+3. Launch the packaged application.
+4. Test it on a clean Windows environment or virtual machine without a system Python installation, if such an environment is available.
+5. Confirm required bundled dependencies, including NumPy, import successfully in the packaged application.
+6. Check that CustomTkinter assets load and the GUI renders correctly.
+7. Verify that configuration, cache, and logs are written to the intended user-writable locations.
+8. Test offline startup where practical.
+
+A successful PyInstaller build alone is not proof that the packaged application works.
+
+If testing on a machine without Python is not possible, state that explicitly. Do not claim this requirement has been verified.
+
+## Part E: Final review
+
+Before stopping:
+
+1. Inspect `git diff --stat` and the full relevant diff.
+2. Run `git diff --check`.
+3. Review `git status`.
+4. Confirm no unrelated files or temporary build artifacts were accidentally included.
+5. Summarize the final module structure.
+6. Explain how to build and run the packaged application.
+7. List tests actually performed and their results.
+8. Clearly list untested behavior, unresolved issues, and packaging limitations.
+
+## Completion criteria
+
+Stage 8 is complete only when:
+
+* GUI responsibilities have been extracted where justified by the actual code.
+* `main.py` remains the entry point/controller.
+* Existing behavior has been preserved as far as verified.
+* The PyInstaller configuration and build instructions are present.
+* The packaged application builds and launches in the available environment.
+* Any unavailable clean-machine tests are clearly documented.
+* The final diff and repository state have been reviewed.
+
+## STOP CONDITION
+
+After completing Stage 8, report the results and STOP.
+
+Do not start another refactoring stage, redesign the architecture, rewrite calculations, commit, or push without explicit approval.
 
 ---
 
