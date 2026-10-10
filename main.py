@@ -2,8 +2,8 @@
 """
 ASTROWEATHER - observing forecast + telescope toolkit
 
-  pip install customtkinter
-  python astro_weather.py
+  python -m pip install -r requirements.txt
+  python main.py
 
 Pages
   Tonight    deep-sky and planetary scores, best window, insights, planets, targets

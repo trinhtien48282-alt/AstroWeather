@@ -1,225 +1,105 @@
+<div align="center">
+
 # AstroWeather 🌌
 
-**A desktop astronomy planning and observing assistant built with Python.**
+**A desktop astronomy and observing planner.**
 
-AstroWeather brings astronomical calculations, observing-condition estimates, weather forecasts, telescope and camera tools, and observation planning together in one desktop application.
+Explore sky positions, estimate observing conditions, check your equipment, and plan a night around the forecast.
 
-The goal is simple: help amateur astronomers decide **what to observe, when to observe it, and what conditions to expect**.
+</div>
 
-> [!WARNING]
-> **Experimental software:** AstroWeather is a personal, AI-assisted project currently under active development. AI tools are used for code generation, refactoring, debugging, and documentation. Changes are reviewed, tested, and integrated by the project author, but the application may still contain bugs, numerical inaccuracies, or incomplete features. Astronomy calculations and observing-condition estimates should be treated as informational rather than authoritative.
+AstroWeather is an experimental Python desktop application for amateur astronomers. Its astronomy calculations run locally; weather and place search use Open-Meteo over the internet. Position, seeing, transparency, and visibility results are estimates and should be treated as informational.
 
-> [!NOTE]
-> **Development status:** AstroWeather is being refactored from a monolithic Python application into a modular architecture. Features and internal interfaces may change during development.
+## Features
 
----
+- **Tonight and forecast:** weather-aware observing scores, hourly conditions, Moon interference, and best observing windows.
+- **Planner:** rank targets by visibility, altitude, equipment, and forecast conditions.
+- **Sky chart:** inspect the Sun, Moon, planets, stars, and deep-sky targets.
+- **Telescope tools:** calculate magnification, field of view, resolution, camera sampling, and related values.
+- **Local astronomy engine:** built-in Sun, Moon, and planet positions, with optional NumPy acceleration and optional Astropy high-precision positions.
+- **Location and equipment settings:** save coordinates, observing conditions, telescope, eyepieces, and Barlow lenses.
 
-## ✨ Features
+## Requirements
 
-### 🔭 Astronomy engine
+- Python 3.12 or newer
+- Tkinter support in your Python installation
+- Internet access for weather forecasts and location search
 
-* Sun and Moon position calculations
-* Lunar phase and illumination information
-* Planetary positions and orbital calculations
-* Altitude and azimuth calculations
-* Coordinate precession
-* Sidereal time calculations
-* Stellar and deep-sky catalog support
-* Angular separation calculations
+The required packages are listed in [`requirements.txt`](requirements.txt). NumPy is installed by that file and enables the vector engine and Planner. Astropy is optional and is not included in the default requirements.
 
-### 🌤️ Observing conditions
-
-Evaluate conditions that may affect a night of observing:
-
-* Seeing estimates
-* Transparency assessment
-* Dew and wind considerations
-* Limiting-magnitude estimation
-* Moonlight interference
-* Overall observing-condition scoring
-
-These are estimates, not substitutes for direct observations or professional meteorological measurements.
-
-### 🔬 Telescope and camera tools
-
-Explore how your equipment affects what you can observe or photograph:
-
-* Telescope magnification
-* Exit pupil
-* True field of view
-* Angular resolution
-* Image scale
-* Camera sampling
-* Planetary image-size estimation
-* Astrophotography calculations
-
-### 🗓️ Observation planning
-
-* Target visibility analysis
-* Altitude tracking
-* Observation scheduling
-* Target suitability analysis
-
-### 🌦️ Weather and location
-
-* Weather information and forecast analysis
-* Location and geocoding support
-* Weather-aware observing preparation
-
-### ⚡ Flexible calculation engine
-
-AstroWeather supports:
-
-* **Pure Python:** scalar calculation paths without NumPy
-* **Optional NumPy acceleration:** faster calculation paths where supported
-
-NumPy is optional, and the application is designed to retain a pure-Python fallback.
-
----
-
-## 🖥️ Technology
-
-| Component                       | Technology                |
-| ------------------------------- | ------------------------- |
-| Language                        | Python                    |
-| Desktop interface               | CustomTkinter, Tkinter    |
-| Optional numerical acceleration | NumPy                     |
-| Weather data                    | Open-Meteo                |
-| Configuration and local data    | Standard Python libraries |
-
----
-
-## 🚀 Getting started
-
-### Requirements
-
-* Python compatible with the project's current dependencies
-* Windows or another environment capable of running Tkinter, subject to compatibility testing
-* An internet connection for online weather and geocoding features
-* NumPy is optional
-
-### 1. Clone the repository
+## Install and run from source
 
 ```powershell
 git clone https://github.com/trinhtien48282-alt/AstroWeather.git
 cd AstroWeather
-```
-
-### 2. Install dependencies
-
-Install the main GUI dependency:
-
-```powershell
-python -m pip install customtkinter
-```
-
-For optional NumPy acceleration:
-
-```powershell
-python -m pip install numpy
-```
-
-Install any additional dependencies required by the current version of the project.
-
-### 3. Launch the application
-
-```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 python main.py
 ```
 
-If the application fails to start, check the installed Python version and dependencies, then review any error output or application logs.
+The app opens a desktop window and keeps running until you close it. Run commands from the repository directory.
 
-> [!TIP]
-> Run these commands from the repository directory. A virtual environment is recommended for development to keep project dependencies separate from other Python applications.
+### Optional Astropy support
 
----
+To enable the high-precision positions option when running from source:
 
-## 🔭 Default observing profile
+```powershell
+python -m pip install astropy
+```
 
-AstroWeather includes a default equipment profile that can be adjusted in the application.
+Astropy is not bundled in the standard Windows build. See [`BUILDING.md`](BUILDING.md) to include it in a build.
 
-| Setting                         | Default              |
-| ------------------------------- | -------------------- |
-| Telescope aperture              | 76 mm                |
-| Telescope focal length          | 700 mm               |
-| Mount type                      | Alt-azimuth          |
-| Eyepieces                       | 20 mm, 12.5 mm, 4 mm |
-| Eyepiece apparent field of view | 35°                  |
-| Barlow lenses                   | 1.5× and 2×          |
-| Camera                          | Custom configuration |
+## Configuration and local data
 
-These values are a starting profile, not a requirement. Actual observing results depend on the equipment, atmospheric conditions, target, and observing technique.
+The application stores its configuration, weather cache, and error log in a user-writable `AstroWeather` directory:
 
-## 📍 Default observing location
+- Windows: `%APPDATA%\AstroWeather\`
+- Other platforms: `~/.config/AstroWeather/`
 
-**Cà Mau, Vietnam**
+The files are `config.json`, `cache.json`, and `error.log`. Weather data is cached so the last successful forecast can remain available when a refresh fails. Location search and forecast refresh require internet access.
 
-The application is designed to support changing the observing location and coordinates.
+## Build the Windows application
 
----
+The project includes a PyInstaller onedir specification. Follow [`BUILDING.md`](BUILDING.md) for build prerequisites, diagnostic options, and the first-run checklist. The executable and its supporting files are produced in `dist\AstroWeather\`.
 
-## 🧱 Project architecture
+**Build status:** the checked-in build guide says this configuration has not yet been built or run. No release or prebuilt download is advertised here.
 
-AstroWeather is being organized into modules with distinct responsibilities:
+## Troubleshooting
 
-* `astro/` contains core astronomical calculations and related engines.
-* `astronomy/` contains observing-condition scoring and telescope/camera calculations.
-* `weather/` handles weather data, forecast analysis, and geocoding.
-* `planner/` contains observation-planning logic.
-* `gui/` is the planned home for the desktop interface as GUI extraction progresses.
-* `main.py` remains the application entry point.
+<details>
+<summary>The app does not start</summary>
 
-The exact module layout may evolve as the refactor progresses. Consult the repository itself for the current implementation rather than treating a proposed structure as a guarantee.
+Run `python main.py` from the repository directory and check the Python traceback. Confirm Python 3.12 or newer, Tkinter, and the packages in `requirements.txt` are installed. The app writes unexpected GUI callback and worker errors to `error.log` in the data directory above.
 
----
+</details>
 
-## 🛠️ Development and refactoring
+<details>
+<summary>Weather or city search fails</summary>
 
-AstroWeather is being refactored in small, controlled stages to improve maintainability while preserving the original application's behavior.
+Check your internet connection. Weather and geocoding requests use Open-Meteo; service outages, network restrictions, and invalid responses can prevent updates. When available, the app continues to show the last cached forecast.
 
-| Stage | Scope                                    |
-| ----: | ---------------------------------------- |
-|     0 | Code inspection and dependency mapping   |
-|     1 | Configuration and shared utilities       |
-|     2 | Astronomy core and Sun/Moon calculations |
-|     3 | Planetary calculations and catalogs      |
-|     4 | NumPy astronomy engine                   |
-|     5 | Observing-condition scoring              |
-|     6 | Telescope and camera calculations        |
-|     7 | Weather and observation planning         |
-|     8 | GUI extraction and application structure |
+</details>
 
-The guiding rule is **preserve behavior first, restructure second**. Refactoring should not change established formulas or numerical results simply to make the code look cleaner.
+<details>
+<summary>The Planner is unavailable</summary>
 
-### Development priorities
+The Planner requires NumPy. Install project dependencies with `python -m pip install -r requirements.txt`, then restart the app.
 
-* Numerical consistency and correctness
-* Clear separation of responsibilities
-* Small, verifiable changes
-* Minimal unnecessary dependencies
-* Optional performance optimizations
-* Easier debugging, testing, and future maintenance
+</details>
 
----
+## Development
 
-## 📦 Packaging
+The code is organized by responsibility: `astro/` for sky calculations, `astronomy/` for observing and equipment calculations, `weather/` for forecast data, `planner/` for target planning, and `gui/` for the desktop interface. `main.py` remains the entry point. See [`BUILDING.md`](BUILDING.md) for packaging instructions.
 
-Standalone application packaging is a planned or in-progress development task. Check the latest repository files and releases for the current packaging status and any available packaged builds.
+AstroWeather is under active development. Forecast-based seeing and transparency are proxies, and deep-sky visibility ratings are approximate. Astronomy calculations and observing scores should not be treated as authoritative measurements.
 
----
+## Star History
 
-## 🗺️ Project status
-
-AstroWeather is an experimental personal project under active development.
-
-The current focus is improving the codebase's architecture and maintainability while retaining the application's existing functionality. Future work may include further testing, packaging improvements, and additional astronomy-planning tools.
-
-Contributions, bug reports, and suggestions are welcome, but please remember that the project and its interfaces may change during development.
-
----
-
-## 📜 License
-
-**No license has been specified yet.**
-
-Until a license is added to the repository, do not assume that the code is available for unrestricted reuse, redistribution, or modification.
+<a href="https://www.star-history.com/?repos=trinhtien48282-alt%2Fastroweather&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&legend=top-left" />
+  </picture>
+</a>
