@@ -24,6 +24,7 @@ AstroWeather is an experimental Python desktop application for amateur astronome
 - Python 3.12 or newer
 - Tkinter support in your Python installation
 - Internet access for weather forecasts and location search
+- Windows for the GUI as shipped: it uses Segoe UI / Consolas fonts and Windows mouse-wheel events (data paths and the calculation code are portable)
 
 The required packages are listed in [`requirements.txt`](requirements.txt). NumPy is installed by that file and enables the vector engine and Planner. Astropy is optional and is not included in the default requirements.
 

@@ -30,3 +30,17 @@ def piecewise(x, pts):
 def mean(vals):
     vals = [v for v in vals if v is not None]
     return sum(vals) / len(vals) if vals else None
+
+
+def conv_wind(kmh, units):
+    u = units.get("wind", "km/h")
+    return kmh / 3.6 if u == "m/s" else kmh * 0.621371 if u == "mph" else kmh
+
+
+def conv_temp(c, units):
+    return c * 9 / 5 + 32 if units.get("temp") == "F" else c
+
+
+def conv_dtemp(dc, units):
+    """A temperature DIFFERENCE (dew-point margin): scale only, no +32."""
+    return dc * 9 / 5 if units.get("temp") == "F" else dc

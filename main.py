@@ -21,7 +21,11 @@ Honest note: no free service gives a true "seeing" forecast, so Seeing and
 Transparency here are scientifically-motivated proxies (jet-stream wind, ground wind,
 thermal change, CAPE / aerosols, humidity, visibility). See Settings > How scores work.
 """
+import sys
 import traceback
+
+if sys.version_info < (3, 12):  # the GUI code uses 3.12-only f-string syntax
+    sys.exit("AstroWeather needs Python 3.12 or newer.")
 
 from config import log_error
 from gui.app import AstroApp

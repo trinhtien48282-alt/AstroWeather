@@ -10,6 +10,7 @@ from astro.numpy_engine import apply_perf, HAVE_NUMPY
 from config import log_error, save_config
 from gui.theme import DEEP
 from planner.planner import engine_check, HAVE_ASTROPY
+from weather.analysis import build_insights
 
 
 class SettingsPage:
@@ -124,8 +125,7 @@ class SettingsPage:
         self.cfg["perf"] = {"numpy": bool(self.var_np.get()), "astropy": bool(self.var_ap.get())}
         apply_perf(self.cfg)
         save_config(self.cfg)
-        if self.analysis:
-            self.refresh(force=True)
+        self.reanalyze()
 
     def run_engine_check(self):
         self.btn_engine.configure(state="disabled")
@@ -146,7 +146,8 @@ class SettingsPage:
         if not name:
             return
         self.geo_status.configure(text="searching...")
-        threading.Thread(target=self.geo_worker, args=(name,), daemon=True).start()
+        self.geo_req += 1
+        threading.Thread(target=self.geo_worker, args=(name, self.geo_req), daemon=True).start()
 
     def show_geo_results(self, results):
         for w in self.geo_frame.winfo_children():
@@ -168,7 +169,19 @@ class SettingsPage:
             w.destroy()
         self.update_location_label()
         self.analysis = None
-        self.plan = None
+        self.plan, self.plot_set, self.plan_sel = None, [], None
+        self.plan_req += 1  # a planner run still in flight belongs to the old place: drop its answer
+        self.plan_busy = False
+        self.btn_plan.configure(state="normal")
+        self.plan_status.configure(text="Local time, format YYYY-MM-DD HH:MM")
+        for e in (self.plan_from, self.plan_to):  # old range may be in another timezone
+            e.delete(0, "end")
+        self.clear_tonight()
+        self.hm_labels.delete("all")
+        self.hm_data.delete("all")
+        self.refresh_plan_list()
+        self.show_plan_detail()
+        self.draw_alt_graph()
         self.refresh(force=True)
 
     def use_coords(self):
@@ -184,14 +197,15 @@ class SettingsPage:
     def on_bortle(self, value):
         self.cfg["bortle"] = int(value)
         save_config(self.cfg)
-        if self.analysis:
-            self.refresh(force=True)
+        self.reanalyze()
         self.update_calcs()
 
     def on_units(self, _value):
         self.cfg["units"] = {"temp": self.opt_temp.get(), "wind": self.opt_wind.get()}
         save_config(self.cfg)
         if self.analysis:
+            a = self.analysis
+            a["insights"] = build_insights(a["tonight"], a["moon"], self.cfg, a["combos"], a["offset"])
             self.fill_tonight()
             self.dirty.add("forecast")
             self.flush_dirty()
@@ -221,5 +235,4 @@ class SettingsPage:
         self.cfg["scope"], self.cfg["eyepieces"], self.cfg["barlows"] = sc, eps, bls
         save_config(self.cfg)
         self.update_calcs()
-        if self.analysis:
-            self.refresh(force=True)
+        self.reanalyze()

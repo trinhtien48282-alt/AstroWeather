@@ -38,11 +38,10 @@ class SkyPage:
         self.sky_canvas.grid(row=1, column=0, sticky="n", padx=(24, 8), pady=(0, 10))
         self.box_sky = ctk.CTkTextbox(page, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_sky.grid(row=1, column=1, sticky="nsew", padx=(6, 24), pady=(0, 14))
-        self.sky_base = time.time()
 
     def on_sky_slider(self, value):
         # a drag fires dozens of events: redraw the chart at most every ~30 ms and the table once the drag settles
-        self.sky_ts = self.sky_base + float(value) * 3600.0
+        self.sky_ts = time.time() + float(value) * 3600.0
         if self._sky_job:
             self.after_cancel(self._sky_job)
         if self._sky_job2:
@@ -51,8 +50,7 @@ class SkyPage:
         self._sky_job2 = self.after(300, self.draw_sky)
 
     def sky_now(self):
-        self.sky_base = time.time()
-        self.sky_ts = self.sky_base
+        self.sky_ts = time.time()
         self.sky_slider.set(0)
         self.draw_sky()
 

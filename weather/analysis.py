@@ -14,7 +14,7 @@ from astro.sun_moon import moon_info, moon_pos, next_phase_time, sun_altitude
 from astronomy.optics import build_combos
 from astronomy.scoring import (BORTLE_NELM, moon_drop, moon_score_from_drop, score_dew, score_seeing,
                                score_transparency, score_wind, seeing_fwhm, seeing_label)
-from mathutil import clamp, deg, mean
+from mathutil import clamp, conv_dtemp, conv_wind, deg, mean
 from weather.api import BASE_VARS, UPPER_VARS
 
 
@@ -230,18 +230,19 @@ def analyze(wx, aq, cfg, now_ts):
     eval_ts = (tn["best"][1] + 1800) if tn["best"] else (dark[len(dark) // 2]["ts"] if dark else now_ts)
     targets = rank_targets(eval_ts, lat, lon, ap_eff, nelm, combos, tn["cap"])
     planets = planet_rows(lat, lon, win)
-    insights = build_insights(tn, moon, cfg, combos, off, ap_eff)
+    insights = build_insights(tn, moon, cfg, combos, off)
     return {"hours": hours, "offset": off, "now": now_ts, "tonight": tn, "moon": moon, "planets": planets,
             "targets": targets, "eval_ts": eval_ts, "insights": insights, "combos": combos,
             "elevation": wx.get("elevation"), "has_jet": any(h["jet"] is not None for h in hours),
-            "has_aq": any(h["aod"] is not None for h in hours), "fetched": time.time()}
+            "has_aq": any(h["aod"] is not None for h in hours), "fetched": time.time(), "wx": wx, "aq": aq}
 
 
 def fmt_clock(ts, off):
     return datetime.fromtimestamp(ts, timezone(timedelta(seconds=off))).strftime("%H:%M")
 
 
-def build_insights(tn, moon, cfg, combos, off, ap_eff):
+def build_insights(tn, moon, cfg, combos, off):
+    units = cfg.get("units", {})
     ins = []
     dark = tn["dark"]
     if not dark:
@@ -281,16 +282,16 @@ def build_insights(tn, moon, cfg, combos, off, ap_eff):
         top = max(useful, key=lambda c: c["mag"])
         ins.append(("info", f"Tonight's air supports about {cap:.0f}x. Your best high-power combo: {top['label']} ({top['mag']:.0f}x)."))
     if tn["gust"] is not None and tn["gust"] >= 25:
-        ins.append(("warn", f"Gusts to {tn['gust']:.0f} km/h: a light {cfg['scope'].get('mount', 'AZ')} mount will shake. "
+        ins.append(("warn", f"Gusts to {conv_wind(tn['gust'], units):.0f} {units.get('wind', 'km/h')}: a light {cfg['scope'].get('mount', 'AZ')} mount will shake. "
                             "Use low power or find a windbreak."))
     elif tn["wind"] is not None and tn["wind"] < 12:
         ins.append(("good", "Calm wind: steady views and an easy time with a lightweight tripod."))
     sp = tn["spread"]
     if sp is not None:
         if sp < 1.5:
-            ins.append(("warn", f"Dew will form (temperature only {sp:.1f} degrees above dew point). Bring a dew shield or keep the mirror capped between uses."))
+            ins.append(("warn", f"Dew will form (temperature only {conv_dtemp(sp, units):.1f} degrees above dew point). Bring a dew shield or keep the mirror capped between uses."))
         elif sp < 3:
-            ins.append(("info", f"Dew risk moderate (spread {sp:.1f} degrees)."))
+            ins.append(("info", f"Dew risk moderate (spread {conv_dtemp(sp, units):.1f} degrees)."))
     m = moon["mid"]
     free = len(moon["moonfree"])
     if m["illum"] < 0.15:

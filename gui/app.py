@@ -41,6 +41,7 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         self.sel_col = None
         self.ent, self.out, self.opt = {}, {}, {}
         self.req_id, self.dirty = 0, set()
+        self.geo_req, self.last_try = 0, 0.0
         self._calc_job = self._sky_job = self._sky_job2 = None
         self.plan, self.plan_busy, self.plan_req, self.plan_sel, self.plot_set = None, False, 0, None, []
         self.title("AstroWeather")
@@ -163,6 +164,7 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         if self.busy and not force:
             return
         self.busy = True
+        self.last_try = time.time()
         self.req_id += 1
         self.btn_refresh.configure(state="disabled")
         self.lbl_status.configure(text="updating...")
@@ -175,8 +177,10 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
             wx, aq = fetch_weather(float(loc["lat"]), float(loc["lon"]))
             try:
                 os.makedirs(CONFIG_DIR, exist_ok=True)
-                with open(CACHE_PATH, "w", encoding="utf-8") as f:
+                tmp = f"{CACHE_PATH}.{req}.tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
                     json.dump({"lat": loc["lat"], "lon": loc["lon"], "fetched": time.time(), "wx": wx, "aq": aq}, f)
+                os.replace(tmp, CACHE_PATH)
             except OSError:
                 pass
             result = analyze(wx, aq, cfg, time.time())
@@ -185,15 +189,15 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
             log_error(traceback.format_exc())
             self.events.put(("error", f"{type(e).__name__}: {e}", req))
 
-    def geo_worker(self, name):
+    def geo_worker(self, name, req):
         try:
-            self.events.put(("geo", geocode(name)))
+            self.events.put(("geo", req, geocode(name)))
         except Exception as e:
-            self.events.put(("geo_error", str(e)))
+            self.events.put(("geo_error", req, str(e)))
 
     def tick(self):
         mins = max(10, int(self.cfg.get("auto_refresh_min", 30)))
-        if time.time() - (self.analysis["fetched"] if self.analysis else 0) > mins * 60:
+        if time.time() - max(self.analysis["fetched"] if self.analysis else 0, self.last_try) > mins * 60:
             self.refresh()
         self.after(60000, self.tick)
 
@@ -213,9 +217,11 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
                         note = "offline: " + ev[1]
                         self.lbl_status.configure(text=note[:90] + (" (showing last data)" if self.analysis else ""))
                 elif kind == "geo":
-                    self.show_geo_results(ev[1])
+                    if ev[1] == self.geo_req:
+                        self.show_geo_results(ev[2])
                 elif kind == "geo_error":
-                    self.geo_status.configure(text="search failed: " + ev[1][:80])
+                    if ev[1] == self.geo_req:
+                        self.geo_status.configure(text="search failed: " + ev[2][:80])
                 elif kind == "plan":
                     if ev[1] == self.plan_req:
                         self.plan_busy = False
@@ -234,6 +240,14 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         except Exception:
             log_error(traceback.format_exc())
         self.after(150, self.pump)
+
+    def reanalyze(self):
+        """Re-score the data already downloaded (Bortle, gear or engine changed): no network."""
+        a = self.analysis
+        if a:
+            new = analyze(a["wx"], a["aq"], self.cfg, time.time())
+            new["fetched"] = a["fetched"]
+            self.apply_analysis(new, self.lbl_status.cget("text"))
 
     def apply_analysis(self, a, status):
         self.analysis = a

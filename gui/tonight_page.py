@@ -7,7 +7,7 @@ import customtkinter as ctk
 from astro.catalog import KIND_NAMES
 from astronomy.optics import fmt_angle
 from astronomy.scoring import score_dew, score_wind, seeing_label, verdict
-from gui.theme import CARD, conv_wind, DEEP, fmt_temp, LEVEL_COLORS, score_color
+from gui.theme import CARD, conv_dtemp, conv_wind, DEEP, fmt_temp, LEVEL_COLORS, score_color
 from mathutil import clamp
 from weather.analysis import fmt_clock
 
@@ -85,6 +85,21 @@ class TonightPage:
         c.create_text(cx, cy + 52, text=face, fill="#a9b8d6", font=("Segoe UI", 11))
         c.create_text(cx, 190, text=title, fill="#8a93a6", font=("Segoe UI", 10))
 
+    def clear_tonight(self):
+        self.draw_gauge(self.g_dso, None, "Deep-sky score")
+        self.draw_gauge(self.g_pl, None, "Planetary score")
+        self.lbl_best.configure(text="-")
+        self.lbl_best_sub.configure(text="")
+        self.lbl_dark.configure(text="")
+        for v, s in self.stat.values():
+            v.configure(text="-", text_color="#ffffff")
+            s.configure(text="")
+        for w in self.ins_frame.winfo_children():
+            w.destroy()
+        self.lbl_targets.configure(text="")
+        self.set_text(self.box_planets, "")
+        self.set_text(self.box_targets, "")
+
     def fill_tonight(self):
         a, u, off = self.analysis, self.cfg["units"], self.analysis["offset"]
         tn, win = a["tonight"], a["tonight"]["win"]
@@ -120,7 +135,7 @@ class TonightPage:
                 setv("dew", "-", "")
             else:
                 label = "high" if sp < 1.5 else "moderate" if sp < 3 else "low"
-                setv("dew", label, f"closest approach {sp:.1f} deg to dew point", score_dew(sp))
+                setv("dew", label, f"closest approach {conv_dtemp(sp, u):.1f} deg to dew point", score_dew(sp))
             setv("temp", f"{fmt_temp(tn['tmin'], u)} - {fmt_temp(tn['tmax'], u)}", "during the dark hours")
             setv("rain", f"{tn['pp']:.0f}%", "highest chance tonight", 100 - tn["pp"])
             setv("jet", f"{tn['jet']:.0f} m/s" if tn["jet"] is not None else "n/a",
