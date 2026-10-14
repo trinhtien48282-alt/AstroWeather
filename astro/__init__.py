@@ -1,1 +1,1 @@
-"""Pure-Python astronomy for AstroWeather (no GUI, no NumPy)."""
+"""Astronomy for AstroWeather: pure-Python scalar code plus the optional NumPy engine (no GUI)."""
