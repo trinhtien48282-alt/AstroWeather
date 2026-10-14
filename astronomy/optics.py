@@ -41,7 +41,7 @@ def scope_numbers(sc, nelm):
     ap_eff = math.sqrt(max(ap * ap - obs * obs, 1.0))
     return {"ap": ap, "fl": fl, "obs": obs, "ap_eff": ap_eff, "f": fl / ap,
             "min_mag": ap / 7.0, "max_mag": 2.0 * ap, "comfort": 1.5 * ap,
-            "dawes": 116.0 / ap, "rayleigh": 138.0 / ap, "gather": (ap_eff / 7.0) ** 2,
+            "dawes": 116.0 / ap_eff, "rayleigh": 138.0 / ap_eff, "gather": (ap_eff / 7.0) ** 2,
             "lim": nelm + 5.0 * math.log10(ap_eff / 7.0), "lim_ideal": 6.5 + 5.0 * math.log10(ap_eff / 7.0),
             "scale_mm": 206265.0 / fl, "moon_mm": fl * math.tan(rad(0.52)), "airy": 2.44 * 0.55e-3 * (fl / ap)}
 

@@ -1,0 +1,14 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>AstroWeather Golden Crescent</title>
+  <path
+    d="M83 12 A52 52 0 1 0 116 94 A43 43 0 0 1 83 12Z"
+    fill="#FFD54A"
+  />
+  <circle cx="88" cy="36" r="3" fill="#E9A928"/>
+  <circle cx="102" cy="53" r="2" fill="#E9A928"/>
+  <circle cx="81" cy="24" r="1.8" fill="#E9A928"/>
+  <path
+    d="M33 30 L35 36 L41 38 L35 40 L33 46 L31 40 L25 38 L31 36Z"
+    fill="#FFF1B3"
+  />
+</svg>

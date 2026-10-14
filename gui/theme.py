@@ -1,5 +1,5 @@
 """Colours, sizes, table layouts and small presentation helpers shared by the GUI pages."""
-from mathutil import clamp
+from mathutil import clamp, conv_dtemp, conv_temp, conv_wind  # noqa: F401  (re-exported for the pages)
 
 
 CARD = "#1b1b1b"
@@ -41,8 +41,3 @@ LEVEL_COLORS = {"good": "#4cc38a", "info": "#a9b8d6", "warn": "#e0b84c", "bad": 
 
 def fmt_temp(c, units):
     return f"{c * 9 / 5 + 32:.0f}F" if units.get("temp") == "F" else f"{c:.0f}C"
-
-
-def conv_wind(kmh, units):
-    u = units.get("wind", "km/h")
-    return kmh / 3.6 if u == "m/s" else kmh * 0.621371 if u == "mph" else kmh

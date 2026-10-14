@@ -1,4 +1,4 @@
-#THIS IS THE MAIN CODE CLAUDE!
+
 """
 ASTROWEATHER - observing forecast + telescope toolkit
 
@@ -21,18 +21,32 @@ Honest note: no free service gives a true "seeing" forecast, so Seeing and
 Transparency here are scientifically-motivated proxies (jet-stream wind, ground wind,
 thermal change, CAPE / aerosols, humidity, visibility). See Settings > How scores work.
 """
+import sys
 import traceback
+
+from PySide6.QtWidgets import QApplication
+
+if sys.version_info < (3, 12):  # the GUI code uses 3.12-only f-string syntax
+    sys.exit("AstroWeather needs Python 3.12 or newer.")
 
 from config import log_error
 from gui.app import AstroApp
 
 
 def main():
-    app = AstroApp()
-    app.mainloop()
+    app = QApplication.instance() or QApplication(sys.argv)
+    window = AstroApp()
+    window.show()
+    return app.exec()
+
+
+def _qt_exception_hook(exc_type, exc, tb):
+    log_error("".join(traceback.format_exception(exc_type, exc, tb)))
+    sys.__excepthook__(exc_type, exc, tb)
 
 
 if __name__ == "__main__":
+    sys.excepthook = _qt_exception_hook
     try:
         main()
     except Exception:

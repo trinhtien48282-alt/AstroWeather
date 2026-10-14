@@ -1,7 +1,7 @@
 """Telescope page: setup, calculators and the camera calculator."""
 import time
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.sun_moon import moon_info
 from astronomy.camera import camera_numbers, PHONE_PRESETS
@@ -17,21 +17,21 @@ class CalculatorsPage:
     def build_scope(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(0, weight=1)
-        tabs = ctk.CTkTabview(page)
+        tabs = qt.TabView(page)
         tabs.grid(row=0, column=0, sticky="nsew", padx=20, pady=(0, 14))
         for name in ("Your setup", "Calculators", "Camera"):
             tabs.add(name)
         # ---- setup
-        t = ctk.CTkScrollableFrame(tabs.tab("Your setup"), fg_color="transparent")
+        t = qt.ScrollableFrame(tabs.tab("Your setup"), fg_color="transparent")
         t.pack(fill="both", expand=True)
         c = self.card(t, "Optics")
-        self.out["specs"] = ctk.CTkLabel(c, text="", font=self.f_mono, justify="left", anchor="w")
+        self.out["specs"] = qt.Label(c, text="", font=self.f_mono, justify="left", anchor="w")
         self.out["specs"].pack(anchor="w", padx=16, pady=(0, 12))
         c = self.card(t, "Eyepiece and Barlow combinations")
-        self.box_combos = ctk.CTkTextbox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_combos = qt.TextBox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_combos.pack(fill="x", padx=14, pady=(0, 14))
         # ---- calculators
-        t = ctk.CTkScrollableFrame(tabs.tab("Calculators"), fg_color="transparent")
+        t = qt.ScrollableFrame(tabs.tab("Calculators"), fg_color="transparent")
         t.pack(fill="both", expand=True)
         c = self.card(t, "Magnification, exit pupil and field of view")
         self.entry_row(c, "ep_fl", "Eyepiece focal length (mm)", 12.5)
@@ -42,30 +42,30 @@ class CalculatorsPage:
         self.entry_row(c, "fit_size", "Target size (arcmin)", 30)
         self.out_label(c, "fit")
         c = self.card(t, "Angles and arcs")
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        ctk.CTkLabel(row, text="Convert an angle", width=190, anchor="w", font=self.f_ui).pack(side="left")
-        e = ctk.CTkEntry(row, width=80, font=self.f_ui)
+        qt.Label(row, text="Convert an angle", width=190, anchor="w", font=self.f_ui).pack(side="left")
+        e = qt.Entry(row, width=80, font=self.f_ui)
         e.insert(0, "1")
         e.pack(side="left")
         e.bind("<KeyRelease>", lambda ev: self.schedule_calcs())
         self.ent["ang_val"] = e
-        om = ctk.CTkOptionMenu(row, values=["degrees", "arcminutes", "arcseconds", "radians"], width=120,
+        om = qt.ComboBox(row, values=["degrees", "arcminutes", "arcseconds", "radians"], width=120,
                                command=lambda v: self.update_calcs())
         om.set("degrees")
         om.pack(side="left", padx=8)
         self.opt["ang_unit"] = om
         self.out_label(c, "ang")
         self.entry_row(c, "phys_size", "Real size of object (km)", 100)
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        ctk.CTkLabel(row, text="Distance (km)", width=190, anchor="w", font=self.f_ui).pack(side="left")
-        e = ctk.CTkEntry(row, width=110, font=self.f_ui)
+        qt.Label(row, text="Distance (km)", width=190, anchor="w", font=self.f_ui).pack(side="left")
+        e = qt.Entry(row, width=110, font=self.f_ui)
         e.insert(0, "384400")
         e.pack(side="left")
         e.bind("<KeyRelease>", lambda ev: self.schedule_calcs())
         self.ent["phys_dist"] = e
-        ctk.CTkButton(row, text="Moon (now)", width=90, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
+        qt.Button(row, text="Moon (now)", width=90, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
                       command=self.preset_moon).pack(side="left", padx=8)
         self.out_label(c, "phys")
         c = self.card(t, "Resolution and splitting double stars")
@@ -76,24 +76,24 @@ class CalculatorsPage:
         self.entry_row(c, "drift_dec", "Target declination (deg)", 0)
         self.out_label(c, "drift")
         # ---- camera
-        t = ctk.CTkScrollableFrame(tabs.tab("Camera"), fg_color="transparent")
+        t = qt.ScrollableFrame(tabs.tab("Camera"), fg_color="transparent")
         t.pack(fill="both", expand=True)
         c = self.card(t, "Imaging through the telescope")
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        ctk.CTkLabel(row, text="Camera preset", width=230, anchor="w", font=self.f_ui).pack(side="left")
-        om = ctk.CTkOptionMenu(row, values=list(PHONE_PRESETS), width=340, command=self.on_cam_preset)
+        qt.Label(row, text="Camera preset", width=230, anchor="w", font=self.f_ui).pack(side="left")
+        om = qt.ComboBox(row, values=list(PHONE_PRESETS), width=340, command=self.on_cam_preset)
         om.set(self.cfg.get("camera", {}).get("preset", "Custom"))
         om.pack(side="left")
         self.opt["cam_preset"] = om
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        ctk.CTkLabel(row, text="Mode", width=230, anchor="w", font=self.f_ui).pack(side="left")
-        om = ctk.CTkOptionMenu(row, values=CAM_MODES, width=340, command=lambda v: self.update_calcs())
+        qt.Label(row, text="Mode", width=230, anchor="w", font=self.f_ui).pack(side="left")
+        om = qt.ComboBox(row, values=CAM_MODES, width=340, command=lambda v: self.update_calcs())
         om.set(CAM_MODES[0])
         om.pack(side="left")
         self.opt["cam_mode"] = om
-        self.cam_note = ctk.CTkLabel(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w", justify="left", wraplength=760)
+        self.cam_note = qt.Label(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w", justify="left", wraplength=760)
         self.cam_note.pack(anchor="w", padx=16, pady=(2, 4))
         self.entry_row(c, "cam_pix", "Pixel size (um)", 3.75)
         self.entry_row(c, "cam_w", "Sensor width (pixels)", 1280)
@@ -109,10 +109,10 @@ class CalculatorsPage:
             self.apply_cam_preset(self.cfg["camera"]["preset"])
 
     def entry_row(self, parent, key, label, default, width=90):
-        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row = qt.Frame(parent, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        ctk.CTkLabel(row, text=label, width=230, anchor="w", font=self.f_ui).pack(side="left")
-        e = ctk.CTkEntry(row, width=width, font=self.f_ui)
+        qt.Label(row, text=label, width=230, anchor="w", font=self.f_ui).pack(side="left")
+        e = qt.Entry(row, width=width, font=self.f_ui)
         e.insert(0, str(default))
         e.pack(side="left")
         e.bind("<KeyRelease>", lambda ev: self.schedule_calcs())
@@ -120,7 +120,7 @@ class CalculatorsPage:
         return e
 
     def out_label(self, parent, key):
-        lbl = ctk.CTkLabel(parent, text="", font=self.f_mono, justify="left", anchor="w")
+        lbl = qt.Label(parent, text="", font=self.f_mono, justify="left", anchor="w")
         lbl.pack(anchor="w", padx=16, pady=(6, 12))
         self.out[key] = lbl
 
@@ -165,6 +165,8 @@ class CalculatorsPage:
         self.update_calcs()
 
     def update_calcs(self):
+        if "specs" not in self.out:  # Telescope page not built yet: show_page runs this right after building it
+            return
         cfg = self.cfg
         nelm = BORTLE_NELM.get(int(cfg["bortle"]), 5.6)
         try:
