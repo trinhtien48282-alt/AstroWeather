@@ -99,16 +99,20 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         host.grid(row=1, column=0, sticky="nsew")
         host.grid_columnconfigure(0, weight=1)
         host.grid_rowconfigure(0, weight=1)
-        self.pages = {}
+        self.pages, self.builders, self.built = {}, {}, set()  # a page is built on its first visit: see show_page
         for key, builder in (("tonight", self.build_tonight), ("forecast", self.build_forecast), ("planner", self.build_planner),
                              ("sky", self.build_sky), ("scope", self.build_scope), ("settings", self.build_settings)):
             page = ctk.CTkFrame(host, fg_color="transparent")
             page.grid(row=0, column=0, sticky="nsew")
-            builder(page)
-            self.pages[key] = page
+            self.pages[key], self.builders[key] = page, builder
         self.show_page("tonight")
 
     def show_page(self, key):
+        if key not in self.built:  # building a page costs hundreds of ms, so only pay it when it is opened
+            self.built.add(key)
+            self.builders[key](self.pages[key])
+            if key == "scope":
+                self.update_calcs()
         self.current = key
         self.pages[key].tkraise()
         for k, b in self.nav.items():
@@ -232,6 +236,8 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
                         self.plan_busy = False
                         self.btn_plan.configure(state="normal")
                         self.plan_status.configure(text=ev[2][:110])
+                elif kind == "wiki":
+                    self.show_wiki(*ev[1:])
                 elif kind == "engine":
                     self.lbl_engine.configure(text=ev[1])
                     self.btn_engine.configure(state="normal")
