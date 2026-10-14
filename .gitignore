@@ -16,3 +16,6 @@ dist/
 
 *.egg-info/
 .venv-build/
+
+/importtime.txt
+/it2.txt
