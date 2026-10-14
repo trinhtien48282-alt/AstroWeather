@@ -1,8 +1,7 @@
 """Tonight page: score gauges, best window, stat cards, insights and tables."""
-import tkinter as tk
 from datetime import datetime, timedelta, timezone
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.catalog import KIND_NAMES
 from astronomy.optics import fmt_angle
@@ -18,28 +17,28 @@ class TonightPage:
     def build_tonight(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(0, weight=1)
-        body = ctk.CTkScrollableFrame(page, fg_color="transparent")
+        body = qt.ScrollableFrame(page, fg_color="transparent")
         body.grid(row=0, column=0, sticky="nsew", padx=18, pady=(0, 14))
 
         top = self.card(body)
         top.grid_columnconfigure(2, weight=1)
-        row = ctk.CTkFrame(top, fg_color="transparent")
+        row = qt.Frame(top, fg_color="transparent")
         row.pack(fill="x", padx=10, pady=10)
-        self.g_dso = tk.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
+        self.g_dso = qt.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
         self.g_dso.pack(side="left", padx=6)
-        self.g_pl = tk.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
+        self.g_pl = qt.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
         self.g_pl.pack(side="left", padx=6)
-        right = ctk.CTkFrame(row, fg_color="transparent")
+        right = qt.Frame(row, fg_color="transparent")
         right.pack(side="left", fill="both", expand=True, padx=14)
-        ctk.CTkLabel(right, text="Best window to observe", font=self.f_h2).pack(anchor="w")
-        self.lbl_best = ctk.CTkLabel(right, text="-", font=self.f_big, anchor="w")
+        qt.Label(right, text="Best window to observe", font=self.f_h2).pack(anchor="w")
+        self.lbl_best = qt.Label(right, text="-", font=self.f_big, anchor="w")
         self.lbl_best.pack(anchor="w", pady=(2, 0))
-        self.lbl_best_sub = ctk.CTkLabel(right, text="", font=self.f_ui, text_color="#a9b8d6", justify="left", anchor="w")
+        self.lbl_best_sub = qt.Label(right, text="", font=self.f_ui, text_color="#a9b8d6", justify="left", anchor="w")
         self.lbl_best_sub.pack(anchor="w", pady=(2, 8))
-        self.lbl_dark = ctk.CTkLabel(right, text="", font=self.f_ui, justify="left", anchor="w")
+        self.lbl_dark = qt.Label(right, text="", font=self.f_ui, justify="left", anchor="w")
         self.lbl_dark.pack(anchor="w")
 
-        grid = ctk.CTkFrame(body, fg_color="transparent")
+        grid = qt.Frame(body, fg_color="transparent")
         grid.pack(fill="x", padx=0, pady=2)
         self.stat = {}
         names = [("cloud", "Clouds (dark hours)"), ("trans", "Transparency"), ("seeing", "Seeing (estimate)"),
@@ -47,31 +46,31 @@ class TonightPage:
                  ("moon", "Moon"), ("rain", "Rain chance"), ("jet", "Jet stream / humidity")]
         for i, (key, title) in enumerate(names):
             grid.grid_columnconfigure(i % 3, weight=1, uniform="st")
-            c = ctk.CTkFrame(grid, fg_color=CARD, corner_radius=12)
+            c = qt.Frame(grid, fg_color=CARD, corner_radius=12)
             c.grid(row=i // 3, column=i % 3, sticky="nsew", padx=6, pady=6)
-            ctk.CTkLabel(c, text=title, font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=14, pady=(10, 0))
-            v = ctk.CTkLabel(c, text="-", font=self.f_big, anchor="w")
+            qt.Label(c, text=title, font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=14, pady=(10, 0))
+            v = qt.Label(c, text="-", font=self.f_big, anchor="w")
             v.pack(anchor="w", padx=14)
-            s = ctk.CTkLabel(c, text="", font=self.f_small, text_color="#a9b8d6", justify="left", anchor="w")
+            s = qt.Label(c, text="", font=self.f_small, text_color="#a9b8d6", justify="left", anchor="w")
             s.pack(anchor="w", padx=14, pady=(0, 10))
             self.stat[key] = (v, s)
 
         c = self.card(body, "What to know tonight")
-        self.ins_frame = ctk.CTkFrame(c, fg_color="transparent")
+        self.ins_frame = qt.Frame(c, fg_color="transparent")
         self.ins_frame.pack(fill="x", padx=16, pady=(0, 12))
         c = self.card(body)
         self.adv_open = False
-        self.btn_adv = ctk.CTkButton(c, text="Advanced: hourly weather data  [show]", anchor="w", height=34, font=self.f_ui,
+        self.btn_adv = qt.Button(c, text="Advanced: hourly weather data  [show]", anchor="w", height=34, font=self.f_ui,
                                      fg_color="transparent", hover_color="#232830", command=self.toggle_adv)
         self.btn_adv.pack(fill="x", padx=10, pady=8)
-        self.box_adv = ctk.CTkTextbox(c, height=300, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_adv = qt.TextBox(c, height=300, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         c = self.card(body, "Sun, Moon and planets tonight")
-        self.box_planets = ctk.CTkTextbox(c, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_planets = qt.TextBox(c, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_planets.pack(fill="x", padx=14, pady=(0, 14))
         c = self.card(body, "Top targets for your scope")
-        self.lbl_targets = ctk.CTkLabel(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
+        self.lbl_targets = qt.Label(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
         self.lbl_targets.pack(anchor="w", padx=16)
-        self.box_targets = ctk.CTkTextbox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_targets = qt.TextBox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_targets.pack(fill="x", padx=14, pady=(2, 14))
         self.draw_gauge(self.g_dso, None, "Deep-sky score")
         self.draw_gauge(self.g_pl, None, "Planetary score")
@@ -159,7 +158,7 @@ class TonightPage:
         for w in self.ins_frame.winfo_children():
             w.destroy()
         for level, text in a["insights"]:
-            ctk.CTkLabel(self.ins_frame, text="•  " + text, font=self.f_ui, text_color=LEVEL_COLORS[level],
+            qt.Label(self.ins_frame, text="•  " + text, font=self.f_ui, text_color=LEVEL_COLORS[level],
                          justify="left", anchor="w", wraplength=880).pack(anchor="w", pady=2)
 
         mn = a["moon"]

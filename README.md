@@ -68,7 +68,7 @@ Astronomical positions, forecast-derived observing conditions, and visibility sc
 ## Requirements
 
 - Python 3.12 or newer
-- A Python installation with Tkinter support
+- PySide6, installed from `requirements.txt`
 - Internet access for weather forecasts and location searches
 
 Project dependencies are listed in [`requirements.txt`](requirements.txt).
@@ -165,7 +165,7 @@ Run the application from the repository directory:
 python main.py
 ```
 
-Check the traceback for missing dependencies, Tkinter issues, or configuration errors. Confirm that your Python version meets the requirements and that the project dependencies are installed.
+Check the traceback for missing dependencies or configuration errors. Confirm that your Python version meets the requirements and that the project dependencies are installed.
 
 Unexpected GUI callback and worker errors may be recorded in `error.log` inside the application data directory.
 

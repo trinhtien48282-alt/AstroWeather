@@ -9,7 +9,7 @@ import time
 import traceback
 from datetime import datetime
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.numpy_engine import apply_perf
 from config import CACHE_PATH, CONFIG_DIR, load_config, log_error
@@ -26,11 +26,9 @@ from weather.api import fetch_weather
 from weather.geocoding import geocode
 
 
-ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("dark-blue")
 
 
-class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage, AltitudeGraph, SettingsPage, ctk.CTk):
+class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage, AltitudeGraph, SettingsPage, qt.AppWindow):
     def __init__(self):
         super().__init__()
         icon_path = os.path.join(
@@ -55,13 +53,13 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         self.title("AstroWeather")
         self.geometry("1260x820")
         self.minsize(1120, 720)
-        self.f_title = ctk.CTkFont(family="Segoe UI", size=22, weight="bold")
-        self.f_h2 = ctk.CTkFont(family="Segoe UI", size=15, weight="bold")
-        self.f_ui = ctk.CTkFont(family="Segoe UI", size=13)
-        self.f_small = ctk.CTkFont(family="Segoe UI", size=11)
-        self.f_mono = ctk.CTkFont(family="Consolas", size=12)
-        self.f_mono_s = ctk.CTkFont(family="Consolas", size=11)
-        self.f_big = ctk.CTkFont(family="Segoe UI", size=24, weight="bold")
+        self.f_title = qt.Font(family="Segoe UI", size=22, weight="bold")
+        self.f_h2 = qt.Font(family="Segoe UI", size=15, weight="bold")
+        self.f_ui = qt.Font(family="Segoe UI", size=13)
+        self.f_small = qt.Font(family="Segoe UI", size=11)
+        self.f_mono = qt.Font(family="Consolas", size=12)
+        self.f_mono_s = qt.Font(family="Consolas", size=11)
+        self.f_big = qt.Font(family="Segoe UI", size=24, weight="bold")
         self.build_ui()
         self.update_location_label()
         self.update_calcs()
@@ -70,48 +68,44 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         self.after(300, self.refresh)
         self.after(60000, self.tick)
 
-    def report_callback_exception(self, exc, val, tb):
-        log_error("".join(traceback.format_exception(exc, val, tb)))
-
     def build_ui(self):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        side = ctk.CTkFrame(self, width=190, corner_radius=0, fg_color="#101216")
+        side = qt.Frame(self, width=190, corner_radius=0, fg_color="#101216")
         side.grid(row=0, column=0, sticky="nsew")
         side.grid_propagate(False)
-        ctk.CTkLabel(side, text="AstroWeather", font=self.f_title).pack(anchor="w", padx=20, pady=(24, 0))
-        ctk.CTkLabel(side, text="observing planner", font=self.f_small, text_color="#777").pack(anchor="w", padx=21, pady=(0, 20))
+        qt.Label(side, text="AstroWeather", font=self.f_title).pack(anchor="w", padx=20, pady=(24, 0))
+        qt.Label(side, text="observing planner", font=self.f_small, text_color="#777").pack(anchor="w", padx=21, pady=(0, 20))
         self.nav = {}
         for key, label in (("tonight", "Tonight"), ("forecast", "Forecast"), ("planner", "Planner"), ("sky", "Sky chart"),
                            ("scope", "Telescope"), ("settings", "Settings")):
-            b = ctk.CTkButton(side, text=label, anchor="w", height=38, corner_radius=8, fg_color="transparent",
+            b = qt.Button(side, text=label, anchor="w", height=38, corner_radius=8, fg_color="transparent",
                               hover_color="#232830", text_color="#d0d4dc", font=self.f_ui,
                               command=lambda k=key: self.show_page(k))
             b.pack(fill="x", padx=12, pady=3)
             self.nav[key] = b
 
-        content = ctk.CTkFrame(self, fg_color="transparent")
+        content = qt.Frame(self, fg_color="transparent")
         content.grid(row=0, column=1, sticky="nsew")
         content.grid_columnconfigure(0, weight=1)
         content.grid_rowconfigure(1, weight=1)
-        bar = ctk.CTkFrame(content, fg_color="transparent")
+        bar = qt.Frame(content, fg_color="transparent")
         bar.grid(row=0, column=0, sticky="ew", padx=24, pady=(16, 2))
-        self.lbl_loc = ctk.CTkLabel(bar, text="", font=self.f_h2)
+        self.lbl_loc = qt.Label(bar, text="", font=self.f_h2)
         self.lbl_loc.pack(side="left")
-        self.btn_refresh = ctk.CTkButton(bar, text="Refresh", width=90, font=self.f_ui, command=self.refresh)
+        self.btn_refresh = qt.Button(bar, text="Refresh", width=90, font=self.f_ui, command=self.refresh)
         self.btn_refresh.pack(side="right")
-        self.lbl_status = ctk.CTkLabel(bar, text="", font=self.f_small, text_color="#8a93a6")
+        self.lbl_status = qt.Label(bar, text="", font=self.f_small, text_color="#8a93a6")
         self.lbl_status.pack(side="right", padx=12)
 
-        host = ctk.CTkFrame(content, fg_color="transparent")
+        host = qt.PageStack(content)
         host.grid(row=1, column=0, sticky="nsew")
-        host.grid_columnconfigure(0, weight=1)
-        host.grid_rowconfigure(0, weight=1)
+        self.page_stack = host
         self.pages, self.builders, self.built = {}, {}, set()  # a page is built on its first visit: see show_page
         for key, builder in (("tonight", self.build_tonight), ("forecast", self.build_forecast), ("planner", self.build_planner),
                              ("sky", self.build_sky), ("scope", self.build_scope), ("settings", self.build_settings)):
-            page = ctk.CTkFrame(host, fg_color="transparent")
-            page.grid(row=0, column=0, sticky="nsew")
+            page = qt.Frame(fg_color="transparent")
+            host.addWidget(page)
             self.pages[key], self.builders[key] = page, builder
         self.show_page("tonight")
 
@@ -122,7 +116,7 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
             if key == "scope":
                 self.update_calcs()
         self.current = key
-        self.pages[key].tkraise()
+        self.page_stack.setCurrentWidget(self.pages[key])
         for k, b in self.nav.items():
             b.configure(fg_color="#232a36" if k == key else "transparent")
         if key == "sky":
@@ -146,10 +140,10 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         self.lbl_loc.configure(text=f"{loc['name']}   ({loc['lat']:.3f}, {loc['lon']:.3f})")
 
     def card(self, parent, title=None, pady=6):
-        f = ctk.CTkFrame(parent, fg_color=CARD, corner_radius=12)
+        f = qt.Frame(parent, fg_color=CARD, corner_radius=12)
         f.pack(fill="x", padx=6, pady=pady)
         if title:
-            ctk.CTkLabel(f, text=title, font=self.f_h2).pack(anchor="w", padx=16, pady=(12, 4))
+            qt.Label(f, text=title, font=self.f_h2).pack(anchor="w", padx=16, pady=(12, 4))
         return f
 
     def set_text(self, box, text):

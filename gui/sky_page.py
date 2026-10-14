@@ -2,11 +2,10 @@
 import math
 import threading
 import time
-import tkinter as tk
 import webbrowser
 from datetime import datetime, timedelta, timezone
 
-import customtkinter as ctk
+from gui import qt
 
 import wiki
 from astro.catalog import BRIGHT_STARS, KIND_NAMES
@@ -67,42 +66,42 @@ class SkyPage:
         page.grid_columnconfigure(0, weight=3)  # the chart takes the spare width, the info column keeps a readable minimum
         page.grid_columnconfigure(1, weight=1, minsize=380)
         page.grid_rowconfigure(2, weight=1)
-        ctrl = ctk.CTkFrame(page, fg_color="transparent")
+        ctrl = qt.Frame(page, fg_color="transparent")
         ctrl.grid(row=0, column=0, columnspan=2, sticky="ew", padx=24, pady=(0, 2))
-        self.lbl_skytime = ctk.CTkLabel(ctrl, text="", font=self.f_h2, width=210, anchor="w")
+        self.lbl_skytime = qt.Label(ctrl, text="", font=self.f_h2, width=210, anchor="w")
         self.lbl_skytime.pack(side="left")
-        self.sky_slider = ctk.CTkSlider(ctrl, from_=-3, to=36, number_of_steps=156, width=360, command=self.on_sky_slider)
+        self.sky_slider = qt.Slider(ctrl, from_=-3, to=36, number_of_steps=156, width=360, command=self.on_sky_slider)
         self.sky_slider.set(0)
         self.sky_slider.pack(side="left", padx=10)
-        ctk.CTkButton(ctrl, text="Now", width=60, font=self.f_ui, command=self.sky_now).pack(side="left")
+        qt.Button(ctrl, text="Now", width=60, font=self.f_ui, command=self.sky_now).pack(side="left")
         for text, f in (("-", 1 / 1.5), ("+", 1.5)):
-            ctk.CTkButton(ctrl, text=text, width=34, font=self.f_ui, command=lambda f=f: self.sky_zoom_step(f)).pack(side="left", padx=(8, 0))
-        ctk.CTkButton(ctrl, text="Fit", width=44, font=self.f_ui, command=self.sky_fit).pack(side="left", padx=(8, 0))
-        self.lbl_skyinfo = ctk.CTkLabel(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
+            qt.Button(ctrl, text=text, width=34, font=self.f_ui, command=lambda f=f: self.sky_zoom_step(f)).pack(side="left", padx=(8, 0))
+        qt.Button(ctrl, text="Fit", width=44, font=self.f_ui, command=self.sky_fit).pack(side="left", padx=(8, 0))
+        self.lbl_skyinfo = qt.Label(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
         self.lbl_skyinfo.grid(row=1, column=0, columnspan=2, sticky="w", padx=26, pady=(0, 4))
-        self.sky_canvas = tk.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
+        self.sky_canvas = qt.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
         self.sky_canvas.grid(row=2, column=0, sticky="nsew", padx=(24, 8), pady=(0, 14))
         self.sky_canvas.bind("<Configure>", self.on_sky_resize)
         self.sky_canvas.bind("<MouseWheel>", self.on_sky_wheel)
         self.sky_canvas.bind("<ButtonPress-1>", self.on_sky_press)
         self.sky_canvas.bind("<B1-Motion>", self.on_sky_drag)
         self.sky_canvas.bind("<ButtonRelease-1>", self.on_sky_release)
-        right = ctk.CTkFrame(page, fg_color="transparent")
+        right = qt.Frame(page, fg_color="transparent")
         right.grid(row=2, column=1, sticky="nsew", padx=(6, 24), pady=(0, 14))
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(2, weight=1)
-        self.box_info = ctk.CTkTextbox(right, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
+        self.box_info = qt.TextBox(right, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
         self.box_info.grid(row=0, column=0, sticky="ew", pady=(0, 6))
-        self.btn_wiki = ctk.CTkButton(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
+        self.btn_wiki = qt.Button(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
                                       command=self.open_wiki)
         self.btn_wiki.grid(row=1, column=0, sticky="w", pady=(0, 6))
-        tabs = ctk.CTkTabview(right)
+        tabs = qt.TabView(right)
         tabs.grid(row=2, column=0, sticky="nsew")
         tabs.add("Visible now")
         tabs.add("Legend")
-        self.box_sky = ctk.CTkTextbox(tabs.tab("Visible now"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_sky = qt.TextBox(tabs.tab("Visible now"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_sky.pack(fill="both", expand=True)
-        box_leg = ctk.CTkTextbox(tabs.tab("Legend"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
+        box_leg = qt.TextBox(tabs.tab("Legend"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
         box_leg.pack(fill="both", expand=True)
         self.set_text(box_leg, SKY_LEGEND)
         self.set_text(self.box_info, "Click an object on the chart to see its details and a Wikipedia summary.\n\n"

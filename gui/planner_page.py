@@ -1,12 +1,11 @@
 """Planner page: controls, ranked list, plan detail and the planner worker hand-off."""
 import copy
 import threading
-import tkinter as tk
 import traceback
 from datetime import datetime, timedelta, timezone
-from tkinter import messagebox
+from gui.qt import messagebox
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.catalog import KIND_NAMES
 from astro.numpy_engine import HAVE_NUMPY
@@ -22,62 +21,62 @@ class PlannerPage:
     def build_planner(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(1, weight=1)
-        ctrl = ctk.CTkFrame(page, fg_color=CARD, corner_radius=12)
+        ctrl = qt.Frame(page, fg_color=CARD, corner_radius=12)
         ctrl.grid(row=0, column=0, sticky="ew", padx=24, pady=(0, 8))
-        r1 = ctk.CTkFrame(ctrl, fg_color="transparent")
+        r1 = qt.Frame(ctrl, fg_color="transparent")
         r1.pack(fill="x", padx=12, pady=(10, 2))
-        ctk.CTkLabel(r1, text="From", font=self.f_ui).pack(side="left")
-        self.plan_from = ctk.CTkEntry(r1, width=140, font=self.f_ui)
+        qt.Label(r1, text="From", font=self.f_ui).pack(side="left")
+        self.plan_from = qt.Entry(r1, width=140, font=self.f_ui)
         self.plan_from.pack(side="left", padx=(6, 12))
-        ctk.CTkLabel(r1, text="To", font=self.f_ui).pack(side="left")
-        self.plan_to = ctk.CTkEntry(r1, width=140, font=self.f_ui)
+        qt.Label(r1, text="To", font=self.f_ui).pack(side="left")
+        self.plan_to = qt.Entry(r1, width=140, font=self.f_ui)
         self.plan_to.pack(side="left", padx=(6, 12))
         for text, key in (("Tonight", "tonight"), ("Tomorrow night", "tomorrow"), ("Next 3 nights", "3nights"), ("Whole forecast", "all")):
-            ctk.CTkButton(r1, text=text, width=100, height=28, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
+            qt.Button(r1, text=text, width=100, height=28, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
                           command=lambda k=key: self.plan_preset(k)).pack(side="left", padx=3)
-        r2 = ctk.CTkFrame(ctrl, fg_color="transparent")
+        r2 = qt.Frame(ctrl, fg_color="transparent")
         r2.pack(fill="x", padx=12, pady=(2, 10))
-        ctk.CTkLabel(r2, text="Min altitude (deg)", font=self.f_ui).pack(side="left")
-        self.plan_minalt = ctk.CTkEntry(r2, width=55, font=self.f_ui)
+        qt.Label(r2, text="Min altitude (deg)", font=self.f_ui).pack(side="left")
+        self.plan_minalt = qt.Entry(r2, width=55, font=self.f_ui)
         self.plan_minalt.insert(0, str(self.cfg.get("planner", {}).get("min_alt", 30)))
         self.plan_minalt.pack(side="left", padx=(6, 14))
-        ctk.CTkLabel(r2, text="Show", font=self.f_ui).pack(side="left")
-        self.plan_kind = ctk.CTkOptionMenu(r2, values=list(PLAN_KINDS), width=150)
+        qt.Label(r2, text="Show", font=self.f_ui).pack(side="left")
+        self.plan_kind = qt.ComboBox(r2, values=list(PLAN_KINDS), width=150)
         self.plan_kind.set(self.cfg.get("planner", {}).get("kind", "All targets"))
         self.plan_kind.pack(side="left", padx=(6, 14))
-        self.btn_plan = ctk.CTkButton(r2, text="Plan", width=90, font=self.f_ui, command=self.run_plan)
+        self.btn_plan = qt.Button(r2, text="Plan", width=90, font=self.f_ui, command=self.run_plan)
         self.btn_plan.pack(side="left")
-        self.plan_status = ctk.CTkLabel(r2, text="Local time, format YYYY-MM-DD HH:MM", font=self.f_small, text_color="#8a93a6")
+        self.plan_status = qt.Label(r2, text="Local time, format YYYY-MM-DD HH:MM", font=self.f_small, text_color="#8a93a6")
         self.plan_status.pack(side="left", padx=14)
 
-        body = ctk.CTkFrame(page, fg_color="transparent")
+        body = qt.Frame(page, fg_color="transparent")
         body.grid(row=1, column=0, sticky="nsew", padx=18, pady=(0, 12))
         body.grid_columnconfigure(1, weight=1)
         body.grid_rowconfigure(0, weight=1)
-        left = ctk.CTkFrame(body, fg_color=CARD, corner_radius=12)
+        left = qt.Frame(body, fg_color=CARD, corner_radius=12)
         left.grid(row=0, column=0, sticky="nsew", padx=6)
         left.grid_rowconfigure(1, weight=1)
-        ctk.CTkLabel(left, text=f"{' #':<4}{'Target':<21}{'Score':>5}{'Peak':>5}  Best", font=self.f_mono_s, anchor="w",
+        qt.Label(left, text=f"{' #':<4}{'Target':<21}{'Score':>5}{'Peak':>5}  Best", font=self.f_mono_s, anchor="w",
                      text_color="#8a93a6").grid(row=0, column=0, sticky="w", padx=12, pady=(8, 0))
-        self.plan_list = ctk.CTkScrollableFrame(left, fg_color=DEEP, width=380)
+        self.plan_list = qt.ScrollableFrame(left, fg_color=DEEP, width=380)
         self.plan_list.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
-        right = ctk.CTkFrame(body, fg_color="transparent")
+        right = qt.Frame(body, fg_color="transparent")
         right.grid(row=0, column=1, sticky="nsew", padx=6)
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(0, weight=1)
         right.grid_rowconfigure(2, weight=2)  # the graph takes the larger share of spare height
-        self.box_plan = ctk.CTkTextbox(right, height=250, font=self.f_mono_s, fg_color=DEEP, state="disabled", wrap="word")
+        self.box_plan = qt.TextBox(right, height=250, font=self.f_mono_s, fg_color=DEEP, state="disabled", wrap="word")
         self.box_plan.grid(row=0, column=0, sticky="nsew", pady=(0, 6))
-        tools = ctk.CTkFrame(right, fg_color="transparent")
+        tools = qt.Frame(right, fg_color="transparent")
         tools.grid(row=1, column=0, sticky="ew")
-        ctk.CTkLabel(tools, text="Altitude graph:", font=self.f_small, text_color="#8a93a6").pack(side="left")
+        qt.Label(tools, text="Altitude graph:", font=self.f_small, text_color="#8a93a6").pack(side="left")
         for text, key in (("Top 5", "top"), ("Planets", "planets"), ("Clear", "clear")):
-            ctk.CTkButton(tools, text=text, width=70, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
+            qt.Button(tools, text=text, width=70, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
                           command=lambda k=key: self.plot_preset(k)).pack(side="left", padx=4)
-        ctk.CTkButton(tools, text="Fit", width=44, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
+        qt.Button(tools, text="Fit", width=44, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
                       command=self.alt_fit).pack(side="left", padx=4)
-        ctk.CTkLabel(tools, text="click a target to add/remove it; wheel zooms, drag pans", font=self.f_small, text_color="#6b7390").pack(side="left", padx=8)
-        self.alt_canvas = tk.Canvas(right, width=ALT_W, height=ALT_H, bg="#0b1020", highlightthickness=0)
+        qt.Label(tools, text="click a target to add/remove it; wheel zooms, drag pans", font=self.f_small, text_color="#6b7390").pack(side="left", padx=8)
+        self.alt_canvas = qt.Canvas(right, width=ALT_W, height=ALT_H, bg="#0b1020", highlightthickness=0)
         self.alt_canvas.grid(row=2, column=0, sticky="nsew", pady=(4, 0))
         self.alt_canvas.bind("<Motion>", self.on_alt_motion)
         self.alt_canvas.bind("<Configure>", self.on_alt_resize)
@@ -172,11 +171,11 @@ class PlannerPage:
             mark = "●" if r["ti"] in self.plot_set else " "
             label = f"{r['id']} {r['name']}".strip()[:20]
             text = f"{mark}{k + 1:>2} {label:<20}{r['score']:>5.0f}{r['peak_alt']:>4.0f}d {fmt_clock(r['best_ts'], off)}"
-            ctk.CTkButton(self.plan_list, text=text, anchor="w", height=26, font=self.f_mono_s,
+            qt.Button(self.plan_list, text=text, anchor="w", height=26, font=self.f_mono_s,
                           fg_color="#26324a" if k == self.plan_sel else "transparent", hover_color="#232a36",
                           text_color=score_color(r["score"]), command=lambda i=k: self.select_plan(i)).pack(fill="x", pady=1)
         if not self.plan["rows"]:
-            ctk.CTkLabel(self.plan_list, text="Nothing reaches the minimum altitude in a dark enough sky.\nTry a lower altitude or a longer range.",
+            qt.Label(self.plan_list, text="Nothing reaches the minimum altitude in a dark enough sky.\nTry a lower altitude or a longer range.",
                          font=self.f_small, text_color="#8a93a6").pack(pady=20)
 
     def select_plan(self, i):

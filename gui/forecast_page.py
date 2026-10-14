@@ -1,8 +1,7 @@
 """Forecast page: the hour-by-hour heat map and the per-hour detail box."""
-import tkinter as tk
 from datetime import datetime, timedelta, timezone
 
-import customtkinter as ctk
+from gui import qt
 
 from astronomy.scoring import score_wind, seeing_fwhm
 from gui.theme import (BAND_COLORS, BAND_NAMES, CARD, conv_dtemp, conv_temp, conv_wind, CW, DEEP, fmt_temp, HDR, HEAT_ROWS, LBLW, RH,
@@ -16,24 +15,24 @@ class ForecastPage:
     def build_forecast(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(1, weight=1)
-        ctk.CTkLabel(page, text="Hour-by-hour (local time). Click a column for full details.   "
+        qt.Label(page, text="Hour-by-hour (local time). Click a column for full details.   "
                                 "Green = good for observing, red = bad.", font=self.f_small, text_color="#8a93a6").grid(
             row=0, column=0, sticky="w", padx=26, pady=(2, 4))
-        wrap = ctk.CTkFrame(page, fg_color=CARD, corner_radius=12)
+        wrap = qt.Frame(page, fg_color=CARD, corner_radius=12)
         wrap.grid(row=1, column=0, sticky="nsew", padx=24, pady=(0, 8))
         wrap.grid_columnconfigure(1, weight=1)
         wrap.grid_rowconfigure(0, weight=0)
         h = HDR + len(HEAT_ROWS) * RH
-        self.hm_labels = tk.Canvas(wrap, width=LBLW, height=h, bg=CARD, highlightthickness=0)
+        self.hm_labels = qt.Canvas(wrap, width=LBLW, height=h, bg=CARD, highlightthickness=0)
         self.hm_labels.grid(row=0, column=0, sticky="n", padx=(8, 0), pady=8)
-        self.hm_data = tk.Canvas(wrap, height=h, bg=CARD, highlightthickness=0, xscrollincrement=CW)
+        self.hm_data = qt.Canvas(wrap, height=h, bg=CARD, highlightthickness=0, xscrollincrement=CW)
         self.hm_data.grid(row=0, column=1, sticky="ew", padx=0, pady=8)
-        sb = ctk.CTkScrollbar(wrap, orientation="horizontal", command=self.hm_data.xview)
+        sb = qt.ScrollBar(wrap, orientation="horizontal", command=self.hm_data.xview)
         sb.grid(row=1, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
         self.hm_data.configure(xscrollcommand=sb.set)
         self.hm_data.bind("<Button-1>", self.on_heat_click)
         self.hm_data.bind("<MouseWheel>", lambda e: self.hm_data.xview_scroll(-3 if e.delta > 0 else 3, "units"))
-        self.box_detail = ctk.CTkTextbox(page, height=180, font=self.f_mono, fg_color=DEEP, state="disabled")
+        self.box_detail = qt.TextBox(page, height=180, font=self.f_mono, fg_color=DEEP, state="disabled")
         self.box_detail.grid(row=2, column=0, sticky="ew", padx=24, pady=(0, 14))
         self.set_text(self.box_detail, "Click an hour above to see every value for it.")
 
