@@ -165,6 +165,8 @@ class CalculatorsPage:
         self.update_calcs()
 
     def update_calcs(self):
+        if "specs" not in self.out:  # Telescope page not built yet: show_page runs this right after building it
+            return
         cfg = self.cfg
         nelm = BORTLE_NELM.get(int(cfg["bortle"]), 5.6)
         try:

@@ -172,16 +172,18 @@ class SettingsPage:
         self.plan, self.plot_set, self.plan_sel = None, [], None
         self.plan_req += 1  # a planner run still in flight belongs to the old place: drop its answer
         self.plan_busy = False
-        self.btn_plan.configure(state="normal")
-        self.plan_status.configure(text="Local time, format YYYY-MM-DD HH:MM")
-        for e in (self.plan_from, self.plan_to):  # old range may be in another timezone
-            e.delete(0, "end")
+        if "planner" in self.built:  # these widgets exist only after the page was visited
+            self.btn_plan.configure(state="normal")
+            self.plan_status.configure(text="Local time, format YYYY-MM-DD HH:MM")
+            for e in (self.plan_from, self.plan_to):  # old range may be in another timezone
+                e.delete(0, "end")
+            self.refresh_plan_list()
+            self.show_plan_detail()
+            self.draw_alt_graph()
         self.clear_tonight()
-        self.hm_labels.delete("all")
-        self.hm_data.delete("all")
-        self.refresh_plan_list()
-        self.show_plan_detail()
-        self.draw_alt_graph()
+        if "forecast" in self.built:
+            self.hm_labels.delete("all")
+            self.hm_data.delete("all")
         self.refresh(force=True)
 
     def use_coords(self):
