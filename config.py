@@ -37,6 +37,8 @@ DEFAULT_CONFIG = {
 def log_error(msg):
     try:
         os.makedirs(CONFIG_DIR, exist_ok=True)
+        if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > 512 * 1024:
+            os.replace(LOG_PATH, LOG_PATH + ".old")
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {msg}\n")
     except OSError:
@@ -58,6 +60,17 @@ def load_config():
         pass
     except Exception as e:
         log_error(f"config load failed: {e}")
+    try:
+        cfg["bortle"] = min(9, max(1, int(cfg["bortle"])))
+    except (TypeError, ValueError):
+        cfg["bortle"] = DEFAULT_CONFIG["bortle"]
+    try:
+        loc = cfg["location"]
+        loc["lat"], loc["lon"] = float(loc["lat"]), float(loc["lon"])
+        if not (-90 <= loc["lat"] <= 90 and -180 <= loc["lon"] <= 180):
+            raise ValueError
+    except (TypeError, ValueError, KeyError):
+        cfg["location"] = copy.deepcopy(DEFAULT_CONFIG["location"])
     return cfg
 
 

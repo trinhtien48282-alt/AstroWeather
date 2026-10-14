@@ -1,2 +1,2 @@
-customtkinter
-numpy
+customtkinter>=5.2
+numpy>=1.26

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import customtkinter as ctk
 
 from astronomy.scoring import score_wind, seeing_fwhm
-from gui.theme import (BAND_COLORS, BAND_NAMES, CARD, conv_wind, CW, DEEP, fmt_temp, HDR, HEAT_ROWS, LBLW, RH,
+from gui.theme import (BAND_COLORS, BAND_NAMES, CARD, conv_dtemp, conv_temp, conv_wind, CW, DEEP, fmt_temp, HDR, HEAT_ROWS, LBLW, RH,
                        score_color, text_on)
 from mathutil import clamp, piecewise
 
@@ -66,7 +66,7 @@ class ForecastPage:
         if kind == "rh":
             return ("", dim) if h["rh"] is None else (f"{h['rh']:.0f}", score_color(piecewise(h["rh"], [(0, 100), (60, 100), (80, 70), (90, 40), (100, 15)])))
         if kind == "dew":
-            return ("", dim) if h["spread"] is None else (f"{h['spread']:.1f}", score_color(h["sc_dew"]))
+            return ("", dim) if h["spread"] is None else (f"{conv_dtemp(h['spread'], u):.1f}", score_color(h["sc_dew"]))
         if kind == "temp":
             return f"{h['temp'] * 9 / 5 + 32:.0f}" if u.get("temp") == "F" else f"{h['temp']:.0f}", "#2b3a55"
         if kind == "dso":
@@ -132,7 +132,7 @@ class ForecastPage:
             f"Moon {h['moon_alt']:+.0f} deg up, {h['moon_illum'] * 100:.0f}% lit",
             f"Clouds   total {h['cloud']:.0f}%   low {h['low'] if h['low'] is not None else '-'}   mid {h['mid'] if h['mid'] is not None else '-'}   "
             f"high {h['high'] if h['high'] is not None else '-'}     rain chance {h['pp']:.0f}%   precipitation {h['precip']:.1f} mm",
-            f"Air      transparency {h['sc_trans']:.0f}/100   humidity {h['rh'] if h['rh'] is None else round(h['rh'])}%   "
+            f"Air      transparency {h['sc_trans']:.0f}/100   humidity {'-' if h['rh'] is None else round(h['rh'])}%   "
             f"visibility {('%.0f km' % h['vis_km']) if h['vis_km'] is not None else '-'}   "
             f"aerosol depth {('%.2f' % h['aod']) if h['aod'] is not None else '-'}   PM2.5 {('%.0f' % h['pm25']) if h['pm25'] is not None else '-'}",
             f"Seeing   about {seeing_fwhm(h['sc_seeing']):.1f} arcsec ({h['sc_seeing']:.0f}/100)   jet stream "
@@ -140,8 +140,8 @@ class ForecastPage:
             f"temp change {h['dtdt']:+.1f} deg/h",
             f"Wind     {conv_wind(h['wind'], u):.0f} {wu}, gusts {conv_wind(h['gust'], u):.0f} {wu}"
             + (f", from {h['wdir']:.0f} deg" if h['wdir'] is not None else ""),
-            f"Dew      temp {fmt_temp(h['temp'], u)}, dew point {('%.1f deg' % h['dew']) if h['dew'] is not None else '-'}, "
-            f"margin {('%.1f' % h['spread']) if h['spread'] is not None else '-'} deg   pressure {('%.0f hPa' % h['press']) if h['press'] else '-'}",
+            f"Dew      temp {fmt_temp(h['temp'], u)}, dew point {('%.1f deg' % conv_temp(h['dew'], u)) if h['dew'] is not None else '-'}, "
+            f"margin {('%.1f' % conv_dtemp(h['spread'], u)) if h['spread'] is not None else '-'} deg   pressure {('%.0f hPa' % h['press']) if h['press'] else '-'}",
             f"Scores   deep-sky {h['dso']:.0f}   planetary {h['planet']:.0f}   (moon {h['sc_moon']:.0f}, wind {h['sc_wind']:.0f}, dew {h['sc_dew']:.0f})",
         ]
         self.set_text(self.box_detail, "\n".join(lines))
