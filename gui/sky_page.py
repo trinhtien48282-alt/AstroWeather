@@ -27,6 +27,31 @@ WIKI_TITLES = {"Mercury": ["Mercury (planet)"], "Castor": ["Castor (star)"], "Po
                "Hadar": ["Beta Centauri"], "Eps Lyr": ["Epsilon Lyrae"]}
 
 
+SKY_LEGEND = (
+    "READING THE CHART\n"
+    "Looking up: the centre is the zenith, the rim is the horizon. N top, S bottom, E left, W right.\n"
+    "Dashed rings: altitude 30 and 60 deg. Background: bright blue = day, then darker for civil, nautical and astronomical "
+    "twilight, black = Sun below -18 deg.\n\n"
+    "SYMBOLS\n"
+    "White dot       star (bigger = brighter). Name shown for mag < 1.3, or for all when zoomed 2x or more.\n"
+    "Square          deep-sky object or double star from the catalog. Its colour is the rating in your scope:\n"
+    "                green Easy, yellow Moderate, orange Hard, grey Beyond. Shapes do not encode the object type: click one "
+    "to read its type.\n"
+    "Coloured disc  planet, with its name. Size follows brightness.\n"
+    "Pale disc       Moon, with the percent of the disc lit.\n"
+    "Yellow disc     Sun. Never view it without a certified solar filter.\n"
+    "White ring      the object you selected. Click empty sky to clear it.\n\n"
+    "NOTATION\n"
+    "Alt             altitude, degrees above the horizon (0 horizon, 90 zenith).\n"
+    "Az              azimuth, degrees from north through east (N 0, E 90, S 180, W 270).\n"
+    "mag             magnitude: smaller is brighter. A margin of +2 mag means 2 mag brighter than your scope's limit.\n"
+    "Rating          Easy margin >= 3, Moderate >= 1.2, Hard >= 0, Beyond < 0 (estimate for your aperture, Bortle class and Moon).\n"
+    "Moon column     separation from the Moon in degrees / magnitudes of sky limit lost to its glare.\n"
+    "RA, Dec         right ascension and declination, J2000.\n"
+    "Units           ' arcminute, \" arcsecond, d degrees, x magnification.\n"
+)
+
+
 def _ra_text(ra_h):
     h, m = divmod(round(ra_h * 60.0, 1), 60.0)
     return f"{int(h)}h {m:04.1f}m"
@@ -71,8 +96,15 @@ class SkyPage:
         self.btn_wiki = ctk.CTkButton(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
                                       command=self.open_wiki)
         self.btn_wiki.grid(row=1, column=0, sticky="w", pady=(0, 6))
-        self.box_sky = ctk.CTkTextbox(right, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
-        self.box_sky.grid(row=2, column=0, sticky="nsew")
+        tabs = ctk.CTkTabview(right)
+        tabs.grid(row=2, column=0, sticky="nsew")
+        tabs.add("Visible now")
+        tabs.add("Legend")
+        self.box_sky = ctk.CTkTextbox(tabs.tab("Visible now"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_sky.pack(fill="both", expand=True)
+        box_leg = ctk.CTkTextbox(tabs.tab("Legend"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
+        box_leg.pack(fill="both", expand=True)
+        self.set_text(box_leg, SKY_LEGEND)
         self.set_text(self.box_info, "Click an object on the chart to see its details and a Wikipedia summary.\n\n"
                                      "Mouse wheel zooms, dragging pans when zoomed in, Fit resets the view.")
 

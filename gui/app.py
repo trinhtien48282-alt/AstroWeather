@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import sys
 import queue
 import threading
 import time
@@ -32,6 +33,12 @@ ctk.set_default_color_theme("dark-blue")
 class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage, AltitudeGraph, SettingsPage, ctk.CTk):
     def __init__(self):
         super().__init__()
+        icon_path = os.path.join(
+    getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "assets",
+    "astroweather.ico",
+)
+        self.iconbitmap(icon_path)
         self.cfg = load_config()
         apply_perf(self.cfg)
         self.events = queue.Queue()
@@ -44,6 +51,7 @@ class AstroApp(TonightPage, ForecastPage, SkyPage, CalculatorsPage, PlannerPage,
         self.geo_req, self.last_try = 0, 0.0
         self._calc_job = self._sky_job = self._sky_job2 = None
         self.plan, self.plan_busy, self.plan_req, self.plan_sel, self.plot_set = None, False, 0, None, []
+        self.alt_view, self._alt_job, self._alt_drag = None, None, None  # altitude graph: zoom window, resize throttle, pan start
         self.title("AstroWeather")
         self.geometry("1260x820")
         self.minsize(1120, 720)

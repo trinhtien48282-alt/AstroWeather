@@ -1,4 +1,4 @@
-#THIS IS THE MAIN CODE CLAUDE!
+
 """
 ASTROWEATHER - observing forecast + telescope toolkit
 

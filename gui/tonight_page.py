@@ -59,6 +59,12 @@ class TonightPage:
         c = self.card(body, "What to know tonight")
         self.ins_frame = ctk.CTkFrame(c, fg_color="transparent")
         self.ins_frame.pack(fill="x", padx=16, pady=(0, 12))
+        c = self.card(body)
+        self.adv_open = False
+        self.btn_adv = ctk.CTkButton(c, text="Advanced: hourly weather data  [show]", anchor="w", height=34, font=self.f_ui,
+                                     fg_color="transparent", hover_color="#232830", command=self.toggle_adv)
+        self.btn_adv.pack(fill="x", padx=10, pady=8)
+        self.box_adv = ctk.CTkTextbox(c, height=300, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         c = self.card(body, "Sun, Moon and planets tonight")
         self.box_planets = ctk.CTkTextbox(c, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_planets.pack(fill="x", padx=14, pady=(0, 14))
@@ -99,6 +105,7 @@ class TonightPage:
         self.lbl_targets.configure(text="")
         self.set_text(self.box_planets, "")
         self.set_text(self.box_targets, "")
+        self.set_text(self.box_adv, "")
 
     def fill_tonight(self):
         a, u, off = self.analysis, self.cfg["units"], self.analysis["offset"]
@@ -168,7 +175,32 @@ class TonightPage:
                      + "    next full Moon: " + (datetime.fromtimestamp(nf, timezone(timedelta(seconds=off))).strftime("%a %d %b %H:%M") if nf else "-"))
         lines.append("Elong = degrees from the Sun (+ east/evening, - west/morning). Never point a telescope at the Sun without a certified solar filter.")
         self.set_text(self.box_planets, "\n".join(lines))
+        self.fill_advanced()
         self.fill_targets()
+
+    def toggle_adv(self):
+        self.adv_open = not self.adv_open
+        if self.adv_open:
+            self.box_adv.pack(fill="x", padx=14, pady=(0, 14))
+        else:
+            self.box_adv.pack_forget()
+        self.btn_adv.configure(text="Advanced: hourly weather data  [hide]" if self.adv_open else "Advanced: hourly weather data  [show]")
+
+    def fill_advanced(self):
+        """Hourly table for tonight's window from the data analyze() already holds ('-' = not provided)."""
+        a, u = self.analysis, self.cfg["units"]
+        hours, off = a["tonight"]["hours"], a["offset"]
+        if not hours:
+            self.set_text(self.box_adv, "No forecast hours in tonight's window.")
+            return
+        v = lambda x, spec="{:.0f}": "-" if x is None else spec.format(x)
+        lines = [f"{'Time':<6}{'Cloud%':>7}{'Low':>5}{'Mid':>5}{'High':>5}{'Temp':>6}{'RH%':>5}{'Wind':>6}{'Gust':>6}{'Vis km':>8}{'Rain%':>7}{'mm':>6}"]
+        for hr in hours:
+            lines.append(f"{fmt_clock(hr['ts'], off):<6}{v(hr['cloud']):>7}{v(hr['low']):>5}{v(hr['mid']):>5}{v(hr['high']):>5}"
+                         f"{fmt_temp(hr['temp'], u):>6}{v(hr['rh']):>5}{conv_wind(hr['wind'], u):>6.0f}{conv_wind(hr['gust'], u):>6.0f}"
+                         f"{v(hr['vis_km']):>8}{v(hr['pp']):>7}{v(hr['precip'], '{:.1f}'):>6}")
+        lines += ["", f"Wind and gusts in {u.get('wind', 'km/h')}. Local time. '-' = not provided for this place and hour."]
+        self.set_text(self.box_adv, "\n".join(lines))
 
     def fill_targets(self):
         a, off = self.analysis, self.analysis["offset"]

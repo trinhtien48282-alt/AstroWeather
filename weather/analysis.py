@@ -73,8 +73,9 @@ def build_hours(wx, aq, lat, lon):
         gate *= 1.0 - 0.8 * clamp(pp / 70.0, 0.0, 1.0)
         if precip > 0.1:
             gate *= 0.2
-        dso = (0.32 * sc_trans + 0.30 * sc_moon + 0.14 * sc_wind + 0.12 * sc_dew + 0.12 * sc_seeing) * gate
-        planet = (0.45 * sc_seeing + 0.20 * sc_trans + 0.15 * sc_wind + 0.10 * sc_dew + 10.0) * gate
+        # same thresholds as the heat map and Tonight: deep-sky needs Sun < -12, planets Sun < -6; otherwise 0 (not an observing score)
+        dso = (0.32 * sc_trans + 0.30 * sc_moon + 0.14 * sc_wind + 0.12 * sc_dew + 0.12 * sc_seeing) * gate if s_alt < -12 else 0.0
+        planet = (0.45 * sc_seeing + 0.20 * sc_trans + 0.15 * sc_wind + 0.10 * sc_dew + 10.0) * gate if s_alt < -6 else 0.0
         hours.append({
             "ts": ts, "temp": t, "rh": rh, "dew": dew, "spread": spread, "press": cols["surface_pressure"][i],
             "pp": pp, "precip": precip, "cloud": cloud, "low": cols["cloud_cover_low"][i],

@@ -65,6 +65,7 @@ class PlannerPage:
         right.grid(row=0, column=1, sticky="nsew", padx=6)
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(0, weight=1)
+        right.grid_rowconfigure(2, weight=2)  # the graph takes the larger share of spare height
         self.box_plan = ctk.CTkTextbox(right, height=250, font=self.f_mono_s, fg_color=DEEP, state="disabled", wrap="word")
         self.box_plan.grid(row=0, column=0, sticky="nsew", pady=(0, 6))
         tools = ctk.CTkFrame(right, fg_color="transparent")
@@ -73,10 +74,17 @@ class PlannerPage:
         for text, key in (("Top 5", "top"), ("Planets", "planets"), ("Clear", "clear")):
             ctk.CTkButton(tools, text=text, width=70, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
                           command=lambda k=key: self.plot_preset(k)).pack(side="left", padx=4)
-        ctk.CTkLabel(tools, text="click a target to add/remove it", font=self.f_small, text_color="#6b7390").pack(side="left", padx=8)
+        ctk.CTkButton(tools, text="Fit", width=44, height=26, font=self.f_small, fg_color="#2b2b2b", hover_color="#3a3a3a",
+                      command=self.alt_fit).pack(side="left", padx=4)
+        ctk.CTkLabel(tools, text="click a target to add/remove it; wheel zooms, drag pans", font=self.f_small, text_color="#6b7390").pack(side="left", padx=8)
         self.alt_canvas = tk.Canvas(right, width=ALT_W, height=ALT_H, bg="#0b1020", highlightthickness=0)
-        self.alt_canvas.grid(row=2, column=0, sticky="n", pady=(4, 0))
+        self.alt_canvas.grid(row=2, column=0, sticky="nsew", pady=(4, 0))
         self.alt_canvas.bind("<Motion>", self.on_alt_motion)
+        self.alt_canvas.bind("<Configure>", self.on_alt_resize)
+        self.alt_canvas.bind("<MouseWheel>", self.on_alt_wheel)
+        self.alt_canvas.bind("<ButtonPress-1>", self.on_alt_press)
+        self.alt_canvas.bind("<B1-Motion>", self.on_alt_drag)
+        self.alt_canvas.bind("<Double-Button-1>", lambda e: self.alt_fit())
         self.draw_alt_graph()
 
     def plan_page_refresh(self):
@@ -142,6 +150,7 @@ class PlannerPage:
 
     def show_plan(self, res):
         self.plan = res
+        self.alt_view = None  # a new plan shows its whole range
         self.plot_set = [r["ti"] for r in res["rows"][:3]]
         self.plan_sel = 0 if res["rows"] else None
         txt = (f"{len(res['rows'])} ranked, {res['hidden']} never observable | {res['engine']}: {res['t_total_ms']:.0f} ms "

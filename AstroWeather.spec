@@ -52,6 +52,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=CONSOLE,
+    icon="assets/astroweather.ico",
 )
 coll = COLLECT(
     exe,
