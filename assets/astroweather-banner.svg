@@ -1,0 +1,67 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" fill="none">
+  <defs>
+    <linearGradient id="space" x1="0" y1="0" x2="1200" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#050B1B"/>
+      <stop offset="0.52" stop-color="#0A1934"/>
+      <stop offset="1" stop-color="#102B49"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8CF5FF"/>
+      <stop offset="1" stop-color="#38AFFF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(900 170) rotate(90) scale(190 300)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D91C7" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#1D91C7" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="stars" width="97" height="83" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="19" r="1" fill="#C7F6FF" opacity=".7"/>
+      <circle cx="63" cy="9" r=".8" fill="#FFFFFF" opacity=".55"/>
+      <circle cx="81" cy="52" r="1.2" fill="#75DFFF" opacity=".7"/>
+      <circle cx="35" cy="67" r=".7" fill="#FFFFFF" opacity=".6"/>
+      <circle cx="53" cy="42" r=".6" fill="#A7DFFF" opacity=".5"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="360" rx="24" fill="url(#space)"/>
+  <rect width="1200" height="360" rx="24" fill="url(#glow)"/>
+  <rect width="1200" height="360" rx="24" fill="url(#stars)"/>
+
+  <g opacity=".45" stroke="#37CFF5" stroke-width="1.2">
+    <ellipse cx="940" cy="178" rx="235" ry="88" transform="rotate(-24 940 178)"/>
+    <ellipse cx="940" cy="178" rx="235" ry="126" transform="rotate(-24 940 178)" opacity=".45"/>
+    <path d="M733 270 A250 250 0 0 1 1120 55" stroke-dasharray="3 9"/>
+  </g>
+
+  <g transform="translate(930 158)">
+    <circle r="63" fill="#0C2442" stroke="#51D9F4" stroke-opacity=".8" stroke-width="1.5"/>
+    <circle r="53" stroke="#77E8FF" stroke-opacity=".22"/>
+    <circle r="39" stroke="#77E8FF" stroke-opacity=".22" stroke-dasharray="2 7"/>
+    <path d="M-58 0H58M0-58V58" stroke="#6ADBF5" stroke-opacity=".22"/>
+    <circle r="5" fill="#9DF6FF"/>
+    <circle cx="-28" cy="-21" r="3" fill="#59CFFF"/>
+    <circle cx="30" cy="18" r="2.5" fill="#59CFFF"/>
+    <path d="M-38 34L-16 12L-3 21L21-17L42-32" stroke="url(#cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g fill="#BDEFFF">
+    <path d="M1080 89l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" opacity=".95"/>
+    <path d="M800 74l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" opacity=".75"/>
+    <circle cx="1090" cy="262" r="2"/>
+    <circle cx="760" cy="230" r="1.5"/>
+    <circle cx="1045" cy="128" r="1.5"/>
+  </g>
+
+  <path d="M72 68V292" stroke="#48D8F4" stroke-width="3" stroke-linecap="round"/>
+  <path d="M72 68H105" stroke="#48D8F4" stroke-width="3" stroke-linecap="round"/>
+
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="108" y="105" fill="#7BE9FF" font-size="13" font-weight="700" letter-spacing="4">ASTRONOMY · WEATHER · OBSERVATION</text>
+    <text x="104" y="174" fill="#F0FAFF" font-size="57" font-weight="700" letter-spacing="-1.5">AstroWeather</text>
+    <text x="108" y="213" fill="#A9D9F2" font-size="21">Your next observing session starts here.</text>
+    <path d="M108 242H385" stroke="#3AC9EE" stroke-width="1.5" opacity=".7"/>
+    <text x="108" y="270" fill="#73BBD9" font-size="12" letter-spacing="2.4">EXPLORE THE NIGHT SKY</text>
+  </g>
+
+  <rect x=".75" y=".75" width="1198.5" height="358.5" rx="23.25" stroke="#55CFF2" stroke-opacity=".32" stroke-width="1.5"/>
+</svg>
