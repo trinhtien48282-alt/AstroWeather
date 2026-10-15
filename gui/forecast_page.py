@@ -112,7 +112,7 @@ class ForecastPage:
         a = self.analysis
         if not a:
             return
-        i = int(self.hm_data.canvasx(event.x) // CW)
+        i = int(event.x // CW)
         if 0 <= i < len(a["hours"]):
             self.select_col(i)
 

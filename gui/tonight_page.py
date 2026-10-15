@@ -77,18 +77,62 @@ class TonightPage:
 
     def draw_gauge(self, c, score, title):
         c.delete("all")
-        cx, cy, r = 115, 98, 76
-        c.create_arc(cx - r, cy - r, cx + r, cy + r, start=225, extent=-270, style="arc", width=14, outline="#2a2e36")
+        w, h = c.width(), c.height()
+
+        # Keep the original geometry until the widget has a usable size.
+        if w < 60 or h < 60:
+            w, h = 230, 200
+
+        title_h = 20
+        r = max(20.0, min(w / 2 - 14, (h - title_h) / 2 - 14))
+        k = r / 76.0
+        cx = w / 2
+        cy = (h - title_h) / 2 + 8 * k
+
+        def font(size, bold=False):
+            result = ("Segoe UI", max(7, round(size * k)))
+            return result + (("bold",) if bold else ())
+
+        stroke = max(6, round(14 * k))
+        bounds = (cx - r, cy - r, cx + r, cy + r)
+
+        c.create_arc(
+            *bounds, start=225, extent=-270, style="arc",
+            width=stroke, outline="#2a2e36"
+        )
+
         word, face = verdict(score)
+
         if score is not None:
-            c.create_arc(cx - r, cy - r, cx + r, cy + r, start=225, extent=-270 * clamp(score) / 100.0,
-                         style="arc", width=14, outline=score_color(score))
-            c.create_text(cx, cy - 8, text=f"{score:.0f}", fill="#ffffff", font=("Segoe UI", 36, "bold"))
+            c.create_arc(
+                *bounds, start=225,
+                extent=-270 * clamp(score) / 100.0,
+                style="arc", width=stroke,
+                outline=score_color(score)
+            )
+            c.create_text(
+                cx, cy - 8 * k, text=f"{score:.0f}",
+                fill="#ffffff", font=font(36, True)
+            )
         else:
-            c.create_text(cx, cy - 8, text="--", fill="#777777", font=("Segoe UI", 36, "bold"))
-        c.create_text(cx, cy + 32, text=word, fill="#d0d4dc", font=("Segoe UI", 12, "bold"))
-        c.create_text(cx, cy + 52, text=face, fill="#a9b8d6", font=("Segoe UI", 11))
-        c.create_text(cx, 190, text=title, fill="#8a93a6", font=("Segoe UI", 10))
+            c.create_text(
+                cx, cy - 8 * k, text="--",
+                fill="#777777", font=font(36, True)
+            )
+
+        c.create_text(
+            cx, cy + 32 * k, text=word,
+            fill="#d0d4dc", font=font(12, True)
+        )
+        c.create_text(
+            cx, cy + 52 * k, text=face,
+            fill="#a9b8d6", font=font(11)
+        )
+        c.create_text(
+            cx, h - 10, text=title,
+            fill="#8a93a6", font=("Segoe UI", 10)
+        )
+
 
     def clear_tonight(self):
         self.draw_gauge(self.g_dso, None, "Deep-sky score")
