@@ -1,8 +1,7 @@
 """Tonight page: score gauges, best window, stat cards, insights and tables."""
-import tkinter as tk
 from datetime import datetime, timedelta, timezone
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.catalog import KIND_NAMES
 from astronomy.optics import fmt_angle
@@ -18,28 +17,28 @@ class TonightPage:
     def build_tonight(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(0, weight=1)
-        body = ctk.CTkScrollableFrame(page, fg_color="transparent")
+        body = qt.ScrollableFrame(page, fg_color="transparent")
         body.grid(row=0, column=0, sticky="nsew", padx=18, pady=(0, 14))
 
         top = self.card(body)
         top.grid_columnconfigure(2, weight=1)
-        row = ctk.CTkFrame(top, fg_color="transparent")
+        row = qt.Frame(top, fg_color="transparent")
         row.pack(fill="x", padx=10, pady=10)
-        self.g_dso = tk.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
+        self.g_dso = qt.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
         self.g_dso.pack(side="left", padx=6)
-        self.g_pl = tk.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
+        self.g_pl = qt.Canvas(row, width=230, height=200, bg=CARD, highlightthickness=0)
         self.g_pl.pack(side="left", padx=6)
-        right = ctk.CTkFrame(row, fg_color="transparent")
+        right = qt.Frame(row, fg_color="transparent")
         right.pack(side="left", fill="both", expand=True, padx=14)
-        ctk.CTkLabel(right, text="Best window to observe", font=self.f_h2).pack(anchor="w")
-        self.lbl_best = ctk.CTkLabel(right, text="-", font=self.f_big, anchor="w")
+        qt.Label(right, text="Best window to observe", font=self.f_h2).pack(anchor="w")
+        self.lbl_best = qt.Label(right, text="-", font=self.f_big, anchor="w")
         self.lbl_best.pack(anchor="w", pady=(2, 0))
-        self.lbl_best_sub = ctk.CTkLabel(right, text="", font=self.f_ui, text_color="#a9b8d6", justify="left", anchor="w")
+        self.lbl_best_sub = qt.Label(right, text="", font=self.f_ui, text_color="#a9b8d6", justify="left", anchor="w")
         self.lbl_best_sub.pack(anchor="w", pady=(2, 8))
-        self.lbl_dark = ctk.CTkLabel(right, text="", font=self.f_ui, justify="left", anchor="w")
+        self.lbl_dark = qt.Label(right, text="", font=self.f_ui, justify="left", anchor="w")
         self.lbl_dark.pack(anchor="w")
 
-        grid = ctk.CTkFrame(body, fg_color="transparent")
+        grid = qt.Frame(body, fg_color="transparent")
         grid.pack(fill="x", padx=0, pady=2)
         self.stat = {}
         names = [("cloud", "Clouds (dark hours)"), ("trans", "Transparency"), ("seeing", "Seeing (estimate)"),
@@ -47,43 +46,93 @@ class TonightPage:
                  ("moon", "Moon"), ("rain", "Rain chance"), ("jet", "Jet stream / humidity")]
         for i, (key, title) in enumerate(names):
             grid.grid_columnconfigure(i % 3, weight=1, uniform="st")
-            c = ctk.CTkFrame(grid, fg_color=CARD, corner_radius=12)
+            c = qt.Frame(grid, fg_color=CARD, corner_radius=12)
             c.grid(row=i // 3, column=i % 3, sticky="nsew", padx=6, pady=6)
-            ctk.CTkLabel(c, text=title, font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=14, pady=(10, 0))
-            v = ctk.CTkLabel(c, text="-", font=self.f_big, anchor="w")
+            qt.Label(c, text=title, font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=14, pady=(10, 0))
+            v = qt.Label(c, text="-", font=self.f_big, anchor="w")
             v.pack(anchor="w", padx=14)
-            s = ctk.CTkLabel(c, text="", font=self.f_small, text_color="#a9b8d6", justify="left", anchor="w")
+            s = qt.Label(c, text="", font=self.f_small, text_color="#a9b8d6", justify="left", anchor="w")
             s.pack(anchor="w", padx=14, pady=(0, 10))
             self.stat[key] = (v, s)
 
         c = self.card(body, "What to know tonight")
-        self.ins_frame = ctk.CTkFrame(c, fg_color="transparent")
+        self.ins_frame = qt.Frame(c, fg_color="transparent")
         self.ins_frame.pack(fill="x", padx=16, pady=(0, 12))
+        c = self.card(body)
+        self.adv_open = False
+        self.btn_adv = qt.Button(c, text="Advanced: hourly weather data  [show]", anchor="w", height=34, font=self.f_ui,
+                                     fg_color="transparent", hover_color="#232830", command=self.toggle_adv)
+        self.btn_adv.pack(fill="x", padx=10, pady=8)
+        self.box_adv = qt.TextBox(c, height=300, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         c = self.card(body, "Sun, Moon and planets tonight")
-        self.box_planets = ctk.CTkTextbox(c, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_planets = qt.TextBox(c, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_planets.pack(fill="x", padx=14, pady=(0, 14))
         c = self.card(body, "Top targets for your scope")
-        self.lbl_targets = ctk.CTkLabel(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
+        self.lbl_targets = qt.Label(c, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
         self.lbl_targets.pack(anchor="w", padx=16)
-        self.box_targets = ctk.CTkTextbox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_targets = qt.TextBox(c, height=330, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
         self.box_targets.pack(fill="x", padx=14, pady=(2, 14))
         self.draw_gauge(self.g_dso, None, "Deep-sky score")
         self.draw_gauge(self.g_pl, None, "Planetary score")
 
     def draw_gauge(self, c, score, title):
         c.delete("all")
-        cx, cy, r = 115, 98, 76
-        c.create_arc(cx - r, cy - r, cx + r, cy + r, start=225, extent=-270, style="arc", width=14, outline="#2a2e36")
+        w, h = c.width(), c.height()
+
+        # Keep the original geometry until the widget has a usable size.
+        if w < 60 or h < 60:
+            w, h = 230, 200
+
+        title_h = 20
+        r = max(20.0, min(w / 2 - 14, (h - title_h) / 2 - 14))
+        k = r / 76.0
+        cx = w / 2
+        cy = (h - title_h) / 2 + 8 * k
+
+        def font(size, bold=False):
+            result = ("Segoe UI", max(7, round(size * k)))
+            return result + (("bold",) if bold else ())
+
+        stroke = max(6, round(14 * k))
+        bounds = (cx - r, cy - r, cx + r, cy + r)
+
+        c.create_arc(
+            *bounds, start=225, extent=-270, style="arc",
+            width=stroke, outline="#2a2e36"
+        )
+
         word, face = verdict(score)
+
         if score is not None:
-            c.create_arc(cx - r, cy - r, cx + r, cy + r, start=225, extent=-270 * clamp(score) / 100.0,
-                         style="arc", width=14, outline=score_color(score))
-            c.create_text(cx, cy - 8, text=f"{score:.0f}", fill="#ffffff", font=("Segoe UI", 36, "bold"))
+            c.create_arc(
+                *bounds, start=225,
+                extent=-270 * clamp(score) / 100.0,
+                style="arc", width=stroke,
+                outline=score_color(score)
+            )
+            c.create_text(
+                cx, cy - 8 * k, text=f"{score:.0f}",
+                fill="#ffffff", font=font(36, True)
+            )
         else:
-            c.create_text(cx, cy - 8, text="--", fill="#777777", font=("Segoe UI", 36, "bold"))
-        c.create_text(cx, cy + 32, text=word, fill="#d0d4dc", font=("Segoe UI", 12, "bold"))
-        c.create_text(cx, cy + 52, text=face, fill="#a9b8d6", font=("Segoe UI", 11))
-        c.create_text(cx, 190, text=title, fill="#8a93a6", font=("Segoe UI", 10))
+            c.create_text(
+                cx, cy - 8 * k, text="--",
+                fill="#777777", font=font(36, True)
+            )
+
+        c.create_text(
+            cx, cy + 32 * k, text=word,
+            fill="#d0d4dc", font=font(12, True)
+        )
+        c.create_text(
+            cx, cy + 52 * k, text=face,
+            fill="#a9b8d6", font=font(11)
+        )
+        c.create_text(
+            cx, h - 10, text=title,
+            fill="#8a93a6", font=("Segoe UI", 10)
+        )
+
 
     def clear_tonight(self):
         self.draw_gauge(self.g_dso, None, "Deep-sky score")
@@ -99,6 +148,7 @@ class TonightPage:
         self.lbl_targets.configure(text="")
         self.set_text(self.box_planets, "")
         self.set_text(self.box_targets, "")
+        self.set_text(self.box_adv, "")
 
     def fill_tonight(self):
         a, u, off = self.analysis, self.cfg["units"], self.analysis["offset"]
@@ -152,7 +202,7 @@ class TonightPage:
         for w in self.ins_frame.winfo_children():
             w.destroy()
         for level, text in a["insights"]:
-            ctk.CTkLabel(self.ins_frame, text="•  " + text, font=self.f_ui, text_color=LEVEL_COLORS[level],
+            qt.Label(self.ins_frame, text="•  " + text, font=self.f_ui, text_color=LEVEL_COLORS[level],
                          justify="left", anchor="w", wraplength=880).pack(anchor="w", pady=2)
 
         mn = a["moon"]
@@ -168,7 +218,32 @@ class TonightPage:
                      + "    next full Moon: " + (datetime.fromtimestamp(nf, timezone(timedelta(seconds=off))).strftime("%a %d %b %H:%M") if nf else "-"))
         lines.append("Elong = degrees from the Sun (+ east/evening, - west/morning). Never point a telescope at the Sun without a certified solar filter.")
         self.set_text(self.box_planets, "\n".join(lines))
+        self.fill_advanced()
         self.fill_targets()
+
+    def toggle_adv(self):
+        self.adv_open = not self.adv_open
+        if self.adv_open:
+            self.box_adv.pack(fill="x", padx=14, pady=(0, 14))
+        else:
+            self.box_adv.pack_forget()
+        self.btn_adv.configure(text="Advanced: hourly weather data  [hide]" if self.adv_open else "Advanced: hourly weather data  [show]")
+
+    def fill_advanced(self):
+        """Hourly table for tonight's window from the data analyze() already holds ('-' = not provided)."""
+        a, u = self.analysis, self.cfg["units"]
+        hours, off = a["tonight"]["hours"], a["offset"]
+        if not hours:
+            self.set_text(self.box_adv, "No forecast hours in tonight's window.")
+            return
+        v = lambda x, spec="{:.0f}": "-" if x is None else spec.format(x)
+        lines = [f"{'Time':<6}{'Cloud%':>7}{'Low':>5}{'Mid':>5}{'High':>5}{'Temp':>6}{'RH%':>5}{'Wind':>6}{'Gust':>6}{'Vis km':>8}{'Rain%':>7}{'mm':>6}"]
+        for hr in hours:
+            lines.append(f"{fmt_clock(hr['ts'], off):<6}{v(hr['cloud']):>7}{v(hr['low']):>5}{v(hr['mid']):>5}{v(hr['high']):>5}"
+                         f"{fmt_temp(hr['temp'], u):>6}{v(hr['rh']):>5}{conv_wind(hr['wind'], u):>6.0f}{conv_wind(hr['gust'], u):>6.0f}"
+                         f"{v(hr['vis_km']):>8}{v(hr['pp']):>7}{v(hr['precip'], '{:.1f}'):>6}")
+        lines += ["", f"Wind and gusts in {u.get('wind', 'km/h')}. Local time. '-' = not provided for this place and hour."]
+        self.set_text(self.box_adv, "\n".join(lines))
 
     def fill_targets(self):
         a, off = self.analysis, self.analysis["offset"]

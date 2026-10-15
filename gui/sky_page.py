@@ -2,11 +2,10 @@
 import math
 import threading
 import time
-import tkinter as tk
 import webbrowser
 from datetime import datetime, timedelta, timezone
 
-import customtkinter as ctk
+from gui import qt
 
 import wiki
 from astro.catalog import BRIGHT_STARS, KIND_NAMES
@@ -27,6 +26,31 @@ WIKI_TITLES = {"Mercury": ["Mercury (planet)"], "Castor": ["Castor (star)"], "Po
                "Hadar": ["Beta Centauri"], "Eps Lyr": ["Epsilon Lyrae"]}
 
 
+SKY_LEGEND = (
+    "READING THE CHART\n"
+    "Looking up: the centre is the zenith, the rim is the horizon. N top, S bottom, E left, W right.\n"
+    "Dashed rings: altitude 30 and 60 deg. Background: bright blue = day, then darker for civil, nautical and astronomical "
+    "twilight, black = Sun below -18 deg.\n\n"
+    "SYMBOLS\n"
+    "White dot       star (bigger = brighter). Name shown for mag < 1.3, or for all when zoomed 2x or more.\n"
+    "Square          deep-sky object or double star from the catalog. Its colour is the rating in your scope:\n"
+    "                green Easy, yellow Moderate, orange Hard, grey Beyond. Shapes do not encode the object type: click one "
+    "to read its type.\n"
+    "Coloured disc  planet, with its name. Size follows brightness.\n"
+    "Pale disc       Moon, with the percent of the disc lit.\n"
+    "Yellow disc     Sun. Never view it without a certified solar filter.\n"
+    "White ring      the object you selected. Click empty sky to clear it.\n\n"
+    "NOTATION\n"
+    "Alt             altitude, degrees above the horizon (0 horizon, 90 zenith).\n"
+    "Az              azimuth, degrees from north through east (N 0, E 90, S 180, W 270).\n"
+    "mag             magnitude: smaller is brighter. A margin of +2 mag means 2 mag brighter than your scope's limit.\n"
+    "Rating          Easy margin >= 3, Moderate >= 1.2, Hard >= 0, Beyond < 0 (estimate for your aperture, Bortle class and Moon).\n"
+    "Moon column     separation from the Moon in degrees / magnitudes of sky limit lost to its glare.\n"
+    "RA, Dec         right ascension and declination, J2000.\n"
+    "Units           ' arcminute, \" arcsecond, d degrees, x magnification.\n"
+)
+
+
 def _ra_text(ra_h):
     h, m = divmod(round(ra_h * 60.0, 1), 60.0)
     return f"{int(h)}h {m:04.1f}m"
@@ -42,37 +66,44 @@ class SkyPage:
         page.grid_columnconfigure(0, weight=3)  # the chart takes the spare width, the info column keeps a readable minimum
         page.grid_columnconfigure(1, weight=1, minsize=380)
         page.grid_rowconfigure(2, weight=1)
-        ctrl = ctk.CTkFrame(page, fg_color="transparent")
+        ctrl = qt.Frame(page, fg_color="transparent")
         ctrl.grid(row=0, column=0, columnspan=2, sticky="ew", padx=24, pady=(0, 2))
-        self.lbl_skytime = ctk.CTkLabel(ctrl, text="", font=self.f_h2, width=210, anchor="w")
+        self.lbl_skytime = qt.Label(ctrl, text="", font=self.f_h2, width=210, anchor="w")
         self.lbl_skytime.pack(side="left")
-        self.sky_slider = ctk.CTkSlider(ctrl, from_=-3, to=36, number_of_steps=156, width=360, command=self.on_sky_slider)
+        self.sky_slider = qt.Slider(ctrl, from_=-3, to=36, number_of_steps=156, width=360, command=self.on_sky_slider)
         self.sky_slider.set(0)
         self.sky_slider.pack(side="left", padx=10)
-        ctk.CTkButton(ctrl, text="Now", width=60, font=self.f_ui, command=self.sky_now).pack(side="left")
+        qt.Button(ctrl, text="Now", width=60, font=self.f_ui, command=self.sky_now).pack(side="left")
         for text, f in (("-", 1 / 1.5), ("+", 1.5)):
-            ctk.CTkButton(ctrl, text=text, width=34, font=self.f_ui, command=lambda f=f: self.sky_zoom_step(f)).pack(side="left", padx=(8, 0))
-        ctk.CTkButton(ctrl, text="Fit", width=44, font=self.f_ui, command=self.sky_fit).pack(side="left", padx=(8, 0))
-        self.lbl_skyinfo = ctk.CTkLabel(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
+            qt.Button(ctrl, text=text, width=34, font=self.f_ui, command=lambda f=f: self.sky_zoom_step(f)).pack(side="left", padx=(8, 0))
+        qt.Button(ctrl, text="Fit", width=44, font=self.f_ui, command=self.sky_fit).pack(side="left", padx=(8, 0))
+        self.lbl_skyinfo = qt.Label(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
         self.lbl_skyinfo.grid(row=1, column=0, columnspan=2, sticky="w", padx=26, pady=(0, 4))
-        self.sky_canvas = tk.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
+        self.sky_canvas = qt.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
         self.sky_canvas.grid(row=2, column=0, sticky="nsew", padx=(24, 8), pady=(0, 14))
         self.sky_canvas.bind("<Configure>", self.on_sky_resize)
         self.sky_canvas.bind("<MouseWheel>", self.on_sky_wheel)
         self.sky_canvas.bind("<ButtonPress-1>", self.on_sky_press)
         self.sky_canvas.bind("<B1-Motion>", self.on_sky_drag)
         self.sky_canvas.bind("<ButtonRelease-1>", self.on_sky_release)
-        right = ctk.CTkFrame(page, fg_color="transparent")
+        right = qt.Frame(page, fg_color="transparent")
         right.grid(row=2, column=1, sticky="nsew", padx=(6, 24), pady=(0, 14))
         right.grid_columnconfigure(0, weight=1)
         right.grid_rowconfigure(2, weight=1)
-        self.box_info = ctk.CTkTextbox(right, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
+        self.box_info = qt.TextBox(right, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
         self.box_info.grid(row=0, column=0, sticky="ew", pady=(0, 6))
-        self.btn_wiki = ctk.CTkButton(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
+        self.btn_wiki = qt.Button(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
                                       command=self.open_wiki)
         self.btn_wiki.grid(row=1, column=0, sticky="w", pady=(0, 6))
-        self.box_sky = ctk.CTkTextbox(right, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
-        self.box_sky.grid(row=2, column=0, sticky="nsew")
+        tabs = qt.TabView(right)
+        tabs.grid(row=2, column=0, sticky="nsew")
+        tabs.add("Visible now")
+        tabs.add("Legend")
+        self.box_sky = qt.TextBox(tabs.tab("Visible now"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="none")
+        self.box_sky.pack(fill="both", expand=True)
+        box_leg = qt.TextBox(tabs.tab("Legend"), font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
+        box_leg.pack(fill="both", expand=True)
+        self.set_text(box_leg, SKY_LEGEND)
         self.set_text(self.box_info, "Click an object on the chart to see its details and a Wikipedia summary.\n\n"
                                      "Mouse wheel zooms, dragging pans when zoomed in, Fit resets the view.")
 

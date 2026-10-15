@@ -2,9 +2,9 @@
 import threading
 import time
 import traceback
-from tkinter import messagebox
+from gui.qt import messagebox
 
-import customtkinter as ctk
+from gui import qt
 
 from astro.numpy_engine import apply_perf, HAVE_NUMPY
 from config import log_error, save_config
@@ -19,66 +19,66 @@ class SettingsPage:
     def build_settings(self, page):
         page.grid_columnconfigure(0, weight=1)
         page.grid_rowconfigure(0, weight=1)
-        body = ctk.CTkScrollableFrame(page, fg_color="transparent")
+        body = qt.ScrollableFrame(page, fg_color="transparent")
         body.grid(row=0, column=0, sticky="nsew", padx=18, pady=(0, 14))
         c = self.card(body, "Location")
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=2)
-        self.search_entry = ctk.CTkEntry(row, width=300, placeholder_text="Search a city or town", font=self.f_ui)
+        self.search_entry = qt.Entry(row, width=300, placeholder_text="Search a city or town", font=self.f_ui)
         self.search_entry.pack(side="left")
-        ctk.CTkButton(row, text="Search", width=80, font=self.f_ui, command=self.do_search).pack(side="left", padx=8)
-        self.geo_status = ctk.CTkLabel(row, text="", font=self.f_small, text_color="#8a93a6")
+        qt.Button(row, text="Search", width=80, font=self.f_ui, command=self.do_search).pack(side="left", padx=8)
+        self.geo_status = qt.Label(row, text="", font=self.f_small, text_color="#8a93a6")
         self.geo_status.pack(side="left", padx=8)
-        self.geo_frame = ctk.CTkFrame(c, fg_color="transparent")
+        self.geo_frame = qt.Frame(c, fg_color="transparent")
         self.geo_frame.pack(fill="x", padx=16, pady=4)
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(4, 12))
         loc = self.cfg["location"]
-        self.ent_lat = ctk.CTkEntry(row, width=110, font=self.f_ui)
+        self.ent_lat = qt.Entry(row, width=110, font=self.f_ui)
         self.ent_lat.insert(0, f"{loc['lat']:.4f}")
-        self.ent_lon = ctk.CTkEntry(row, width=110, font=self.f_ui)
+        self.ent_lon = qt.Entry(row, width=110, font=self.f_ui)
         self.ent_lon.insert(0, f"{loc['lon']:.4f}")
-        ctk.CTkLabel(row, text="Latitude", font=self.f_ui).pack(side="left")
+        qt.Label(row, text="Latitude", font=self.f_ui).pack(side="left")
         self.ent_lat.pack(side="left", padx=(6, 14))
-        ctk.CTkLabel(row, text="Longitude", font=self.f_ui).pack(side="left")
+        qt.Label(row, text="Longitude", font=self.f_ui).pack(side="left")
         self.ent_lon.pack(side="left", padx=(6, 14))
-        ctk.CTkButton(row, text="Use these coordinates", width=170, font=self.f_ui, command=self.use_coords).pack(side="left")
+        qt.Button(row, text="Use these coordinates", width=170, font=self.f_ui, command=self.use_coords).pack(side="left")
 
         c = self.card(body, "Sky and units")
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(2, 12))
-        ctk.CTkLabel(row, text="Bortle class (light pollution)", font=self.f_ui).pack(side="left")
-        self.opt_bortle = ctk.CTkOptionMenu(row, values=[str(i) for i in range(1, 10)], width=70, command=self.on_bortle)
+        qt.Label(row, text="Bortle class (light pollution)", font=self.f_ui).pack(side="left")
+        self.opt_bortle = qt.ComboBox(row, values=[str(i) for i in range(1, 10)], width=70, command=self.on_bortle)
         self.opt_bortle.set(str(self.cfg["bortle"]))
         self.opt_bortle.pack(side="left", padx=(8, 24))
-        ctk.CTkLabel(row, text="Temperature", font=self.f_ui).pack(side="left")
-        self.opt_temp = ctk.CTkOptionMenu(row, values=["C", "F"], width=70, command=self.on_units)
+        qt.Label(row, text="Temperature", font=self.f_ui).pack(side="left")
+        self.opt_temp = qt.ComboBox(row, values=["C", "F"], width=70, command=self.on_units)
         self.opt_temp.set(self.cfg["units"]["temp"])
         self.opt_temp.pack(side="left", padx=(8, 24))
-        ctk.CTkLabel(row, text="Wind", font=self.f_ui).pack(side="left")
-        self.opt_wind = ctk.CTkOptionMenu(row, values=["km/h", "m/s", "mph"], width=80, command=self.on_units)
+        qt.Label(row, text="Wind", font=self.f_ui).pack(side="left")
+        self.opt_wind = qt.ComboBox(row, values=["km/h", "m/s", "mph"], width=80, command=self.on_units)
         self.opt_wind.set(self.cfg["units"]["wind"])
         self.opt_wind.pack(side="left", padx=8)
 
         c = self.card(body, "Performance")
-        self.var_np = ctk.BooleanVar(value=bool(self.cfg["perf"].get("numpy", True)) and HAVE_NUMPY)
-        self.var_ap = ctk.BooleanVar(value=bool(self.cfg["perf"].get("astropy", False)) and HAVE_ASTROPY)
-        sw = ctk.CTkSwitch(c, text="Hardware-accelerated math (NumPy vector engine, uses your CPU's SIMD units)", variable=self.var_np, command=self.on_perf, font=self.f_ui)
+        self.var_np = qt.BoolVar(value=bool(self.cfg["perf"].get("numpy", True)) and HAVE_NUMPY)
+        self.var_ap = qt.BoolVar(value=bool(self.cfg["perf"].get("astropy", False)) and HAVE_ASTROPY)
+        sw = qt.Switch(c, text="Hardware-accelerated math (NumPy vector engine, uses your CPU's SIMD units)", variable=self.var_np, command=self.on_perf, font=self.f_ui)
         sw.pack(anchor="w", padx=16, pady=(2, 4))
         if not HAVE_NUMPY:
             sw.configure(state="disabled", text="Hardware-accelerated math: needs  pip install numpy")
-        sw2 = ctk.CTkSwitch(c, text="High-precision positions (Astropy, optional: Moon to arcseconds, refraction)", variable=self.var_ap, command=self.on_perf, font=self.f_ui)
+        sw2 = qt.Switch(c, text="High-precision positions (Astropy, optional: Moon to arcseconds, refraction)", variable=self.var_ap, command=self.on_perf, font=self.f_ui)
         sw2.pack(anchor="w", padx=16, pady=4)
         if not HAVE_ASTROPY:
             sw2.configure(state="disabled", text="High-precision positions: needs  pip install astropy")
-        ctk.CTkLabel(c, text="No GPU is used: these arrays are far too small to benefit from one, and the speed-up comes from vectorised CPU math. "
+        qt.Label(c, text="No GPU is used: these arrays are far too small to benefit from one, and the speed-up comes from vectorised CPU math. "
                              "Switch it off to compare with the plain-Python engine.", font=self.f_small, text_color="#8a93a6", wraplength=860,
                      justify="left", anchor="w").pack(anchor="w", padx=16)
-        row = ctk.CTkFrame(c, fg_color="transparent")
+        row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(6, 12))
-        self.btn_engine = ctk.CTkButton(row, text="Run engine check", width=150, font=self.f_ui, command=self.run_engine_check)
+        self.btn_engine = qt.Button(row, text="Run engine check", width=150, font=self.f_ui, command=self.run_engine_check)
         self.btn_engine.pack(side="left")
-        self.lbl_engine = ctk.CTkLabel(row, text="", font=self.f_mono_s, justify="left", anchor="w")
+        self.lbl_engine = qt.Label(row, text="", font=self.f_mono_s, justify="left", anchor="w")
         self.lbl_engine.pack(side="left", padx=14)
 
         c = self.card(body, "Your telescope")
@@ -88,26 +88,26 @@ class SettingsPage:
                                 ("focal_length", "Focal length (mm)", sc["focal_length"]),
                                 ("obstruction_mm", "Secondary mirror shadow (mm, 0 if unknown)", sc.get("obstruction_mm", 0)),
                                 ("mount", "Mount", sc.get("mount", "AZ"))):
-            row = ctk.CTkFrame(c, fg_color="transparent")
+            row = qt.Frame(c, fg_color="transparent")
             row.pack(fill="x", padx=16, pady=2)
-            ctk.CTkLabel(row, text=label, width=330, anchor="w", font=self.f_ui).pack(side="left")
-            e = ctk.CTkEntry(row, width=160, font=self.f_ui)
+            qt.Label(row, text=label, width=330, anchor="w", font=self.f_ui).pack(side="left")
+            e = qt.Entry(row, width=160, font=self.f_ui)
             e.insert(0, str(val))
             e.pack(side="left")
             self.gear[key] = e
-        ctk.CTkLabel(c, text="Eyepieces, one per line:  name, focal length mm, apparent FOV deg", font=self.f_small,
+        qt.Label(c, text="Eyepieces, one per line:  name, focal length mm, apparent FOV deg", font=self.f_small,
                      text_color="#8a93a6").pack(anchor="w", padx=16, pady=(10, 0))
-        self.box_eps = ctk.CTkTextbox(c, height=90, font=self.f_mono, fg_color=DEEP)
+        self.box_eps = qt.TextBox(c, height=90, font=self.f_mono, fg_color=DEEP)
         self.box_eps.pack(fill="x", padx=16, pady=4)
         self.box_eps.insert("1.0", "\n".join(f"{e['name']}, {e['fl']:g}, {e['afov']:g}" for e in self.cfg["eyepieces"]))
-        ctk.CTkLabel(c, text="Barlows / reducers, one per line:  name, factor", font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=16, pady=(6, 0))
-        self.box_bl = ctk.CTkTextbox(c, height=64, font=self.f_mono, fg_color=DEEP)
+        qt.Label(c, text="Barlows / reducers, one per line:  name, factor", font=self.f_small, text_color="#8a93a6").pack(anchor="w", padx=16, pady=(6, 0))
+        self.box_bl = qt.TextBox(c, height=64, font=self.f_mono, fg_color=DEEP)
         self.box_bl.pack(fill="x", padx=16, pady=4)
         self.box_bl.insert("1.0", "\n".join(f"{b['name']}, {b['factor']:g}" for b in self.cfg["barlows"]))
-        ctk.CTkButton(c, text="Save gear", width=120, font=self.f_ui, command=self.save_gear).pack(anchor="w", padx=16, pady=(6, 14))
+        qt.Button(c, text="Save gear", width=120, font=self.f_ui, command=self.save_gear).pack(anchor="w", padx=16, pady=(6, 14))
 
         c = self.card(body, "How the scores work")
-        ctk.CTkLabel(c, justify="left", anchor="w", wraplength=900, font=self.f_small, text_color="#b6bfd1", text=(
+        qt.Label(c, justify="left", anchor="w", wraplength=900, font=self.f_small, text_color="#b6bfd1", text=(
             "Cloud cover (total, low, mid, high), rain chance, humidity, dew point, visibility, wind, gusts, CAPE and upper-air wind come from Open-Meteo. "
             "Aerosol depth and PM2.5 come from its air-quality feed.\n\n"
             "Transparency (0-100) starts at 100 and loses points for aerosols or PM2.5, humidity above 60%, and poor visibility.\n"
@@ -154,7 +154,7 @@ class SettingsPage:
             w.destroy()
         self.geo_status.configure(text="" if results else "no matches")
         for r in results:
-            ctk.CTkButton(self.geo_frame, text=f"{r['name']}   ({r['lat']:.3f}, {r['lon']:.3f})", anchor="w", font=self.f_ui,
+            qt.Button(self.geo_frame, text=f"{r['name']}   ({r['lat']:.3f}, {r['lon']:.3f})", anchor="w", font=self.f_ui,
                           fg_color="#252a33", hover_color="#323946", height=30,
                           command=lambda r=r: self.set_location(r["name"], r["lat"], r["lon"])).pack(fill="x", pady=2)
 
