@@ -21,6 +21,8 @@ DEFAULT_CONFIG = {
     "perf": {"numpy": True, "astropy": False},
     "planner": {"min_alt": 30, "kind": "All targets"},
     "camera": {"preset": "Custom"},
+    # Sky-chart overlays. Off by default so an upgrade does not change the chart the user already has.
+    "sky": {"constellation_lines": False, "constellation_names": False},
     "scope": {"name": "D76F700", "aperture": 76.0, "focal_length": 700.0, "obstruction_mm": 0.0, "mount": "AZ"},
     "eyepieces": [
         {"name": "20 mm", "fl": 20.0, "afov": 35.0},
