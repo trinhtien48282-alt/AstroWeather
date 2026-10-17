@@ -4,6 +4,8 @@ import threading
 import time
 import webbrowser
 from datetime import datetime, timedelta, timezone
+from astro.constellations import get_constellations
+from config import log_error, save_config
 
 from gui import qt
 
@@ -77,6 +79,10 @@ class SkyPage:
         for text, f in (("-", 1 / 1.5), ("+", 1.5)):
             qt.Button(ctrl, text=text, width=34, font=self.f_ui, command=lambda f=f: self.sky_zoom_step(f)).pack(side="left", padx=(8, 0))
         qt.Button(ctrl, text="Fit", width=44, font=self.f_ui, command=self.sky_fit).pack(side="left", padx=(8, 0))
+        for key, text in (("constellation_lines", "Lines"), ("constellation_names", "Names")):
+            var = qt.BoolVar(value=bool(self.cfg["sky"][key]))
+            qt.Switch(ctrl, text=text, variable=var, font=self.f_small,
+        command=lambda k=key, v=var: self.on_sky_layer(k, v.get())).pack(side="left", padx=(12, 0))
         self.lbl_skyinfo = qt.Label(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
         self.lbl_skyinfo.grid(row=1, column=0, columnspan=2, sticky="w", padx=26, pady=(0, 4))
         self.sky_canvas = qt.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
@@ -165,6 +171,11 @@ class SkyPage:
 
     def sky_fit(self):
         self.sky_zoom, self.sky_pan = 1.0, [0.0, 0.0]
+        self.sky_kick()
+
+    def on_sky_layer(self, key, value):
+        self.cfg["sky"][key] = bool(value)
+        save_config(self.cfg)
         self.sky_kick()
 
     def sky_clamp_pan(self):
@@ -324,6 +335,22 @@ class SkyPage:
         def project(alt, az):
             r = Rz * (90.0 - alt) / 90.0
             return ox - r * math.sin(rad(az)), oy - r * math.cos(rad(az))
+        
+        sky = self.cfg["sky"]
+        if sky["constellation_lines"] or sky["constellation_names"]:
+            cset, err = get_constellations()
+            if err and err != getattr(self, "_con_err", None):
+                self._con_err = err
+                log_error(err)
+            if sky["constellation_lines"]:
+                for a1, z1, a2, z2 in cset.segments(jd, lat, lon):
+                    (x1, y1), (x2, y2) = project(a1, z1), project(a2, z2)
+                    c.create_line(x1, y1, x2, y2, fill="#2f4a7a")
+            if sky["constellation_names"]:
+                for name, a, z in cset.label_positions(jd, lat, lon):
+                    x, y = project(a, z)
+                    if vis(x, y):
+                        c.create_text(x, y, text=name, fill="#4d6aa8", font=font(8))
 
         hits = []  # (x, y, hit radius, key, payload): what a click at that spot selects
 

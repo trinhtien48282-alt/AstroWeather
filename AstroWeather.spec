@@ -14,6 +14,8 @@ WITH_ASTROPY = os.environ.get("ASTROWEATHER_WITH_ASTROPY") == "1"
 CONSOLE = os.environ.get("ASTROWEATHER_CONSOLE") == "1"
 
 datas = [(os.path.join(SPECPATH, "assets"), "assets")]
+if os.path.isdir(os.path.join(SPECPATH, "data")):
+    datas.append((os.path.join(SPECPATH, "data"), "data"))
 binaries = []
 hiddenimports = []
 excludes = []
