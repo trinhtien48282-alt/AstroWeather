@@ -72,8 +72,8 @@ class SettingsPage:
         if not HAVE_ASTROPY:
             sw2.configure(state="disabled", text="High-precision positions: needs  pip install astropy")
         qt.Label(c, text="No GPU is used: these arrays are far too small to benefit from one, and the speed-up comes from vectorised CPU math. "
-                             "Switch it off to compare with the plain-Python engine.", font=self.f_small, text_color="#8a93a6", wraplength=860,
-                     justify="left", anchor="w").pack(anchor="w", padx=16)
+                            "Switch it off to compare with the plain-Python engine.", font=self.f_small, text_color="#8a93a6", wraplength=860,
+                    justify="left", anchor="w").pack(anchor="w", padx=16)
         row = qt.Frame(c, fg_color="transparent")
         row.pack(fill="x", padx=16, pady=(6, 12))
         self.btn_engine = qt.Button(row, text="Run engine check", width=150, font=self.f_ui, command=self.run_engine_check)
@@ -96,7 +96,7 @@ class SettingsPage:
             e.pack(side="left")
             self.gear[key] = e
         qt.Label(c, text="Eyepieces, one per line:  name, focal length mm, apparent FOV deg", font=self.f_small,
-                     text_color="#8a93a6").pack(anchor="w", padx=16, pady=(10, 0))
+                    text_color="#8a93a6").pack(anchor="w", padx=16, pady=(10, 0))
         self.box_eps = qt.TextBox(c, height=90, font=self.f_mono, fg_color=DEEP)
         self.box_eps.pack(fill="x", padx=16, pady=4)
         self.box_eps.insert("1.0", "\n".join(f"{e['name']}, {e['fl']:g}, {e['afov']:g}" for e in self.cfg["eyepieces"]))
