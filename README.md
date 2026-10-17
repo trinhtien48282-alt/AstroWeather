@@ -1,105 +1,251 @@
-<div align="center">
+ <div align="center">
+
+<img src="assets/astroweather.svg" alt="AstroWeather logo" width="96" />
 
 # AstroWeather 🌌
 
-**A desktop astronomy and observing planner.**
+**A desktop astronomy and observing planner**
 
-Explore sky positions, estimate observing conditions, check your equipment, and plan a night around the forecast.
+Explore the night sky. Plan your next observation.
+
+Astronomical calculations, weather forecasts, telescope tools, and observing-session planning in one desktop application.
+
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white)](https://github.com/trinhtien48282-alt/AstroWeather)
+[![Weather](https://img.shields.io/badge/Weather-Open--Meteo-32AFCB?style=flat-square)](https://open-meteo.com/)
 
 </div>
 
-AstroWeather is an experimental Python desktop application for amateur astronomers. Its astronomy calculations run locally; weather and place search use Open-Meteo over the internet. Position, seeing, transparency, and visibility results are estimates and should be treated as informational.
+---
+
+## Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Optional Astropy Support](#optional-astropy-support)
+- [Configuration and Local Data](#configuration-and-local-data)
+- [Building for Windows](#building-for-windows)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Limitations](#limitations)
+- [Star History](#star-history)
+
+## Overview
+
+AstroWeather is an experimental Python desktop application for amateur astronomers. It brings astronomical calculations, weather forecasts, optical calculations, and observing-session planning into one interface.
+
+Explore celestial objects, inspect forecast conditions, compare potential observing targets, and calculate how your telescope and eyepieces affect what you can observe.
+
+Astronomical calculations run locally, while weather forecasts and location searches use online services.
 
 ## Features
 
-- **Tonight and forecast:** weather-aware observing scores, hourly conditions, Moon interference, and best observing windows.
-- **Planner:** rank targets by visibility, altitude, equipment, and forecast conditions.
-- **Sky chart:** inspect the Sun, Moon, planets, stars, and deep-sky targets.
-- **Telescope tools:** calculate magnification, field of view, resolution, camera sampling, and related values.
-- **Local astronomy engine:** built-in Sun, Moon, and planet positions, with optional NumPy acceleration and optional Astropy high-precision positions.
-- **Location and equipment settings:** save coordinates, observing conditions, telescope, eyepieces, and Barlow lenses.
+| Feature | Description |
+|---|---|
+| 🌙 **Tonight & Forecast** | Inspect hourly forecasts, observing conditions, Moon interference, and potential observing windows. |
+| 🔭 **Observing Planner** | Rank potential targets by visibility, altitude, equipment compatibility, and forecast conditions. |
+| 🪐 **Sky Chart** | Explore the Sun, Moon, planets, stars, and deep-sky objects. |
+| 📐 **Telescope Calculator** | Calculate magnification, field of view, resolution, camera sampling, and related optical values. |
+| 🌌 **Astronomy Engine** | Calculate celestial positions using built-in algorithms, with optional NumPy acceleration and optional Astropy calculations. |
+| 📍 **Location Settings** | Configure observing coordinates and local conditions. |
+| 🛠️ **Equipment Configuration** | Configure your telescope, eyepieces, and Barlow lenses. |
+| 🌦️ **Weather Integration** | Retrieve forecast data through Open-Meteo and cache weather data. |
+| 🖥️ **Windows Packaging** | Package the application using PyInstaller's onedir distribution. |
+
+## How It Works
+
+AstroWeather combines five parts of the observing workflow:
+
+1. **Location:** Set your observing coordinates and local conditions.
+2. **Astronomy:** Calculate celestial positions for the sky chart and planner.
+3. **Weather:** Retrieve forecast data from Open-Meteo to help estimate observing conditions.
+4. **Equipment:** Use telescope and eyepiece specifications to calculate optical values.
+5. **Planning:** Combine target information, equipment compatibility, and forecast conditions to prioritize observations.
+
+Forecast estimates and target rankings have limitations. They are planning aids, not guarantees of what you will see through the telescope.
 
 ## Requirements
 
 - Python 3.12 or newer
-- Tkinter support in your Python installation
-- Internet access for weather forecasts and location search
+- PySide6
+- NumPy
+- Internet access for weather forecasts and location searches
 
-The required packages are listed in [`requirements.txt`](requirements.txt). NumPy is installed by that file and enables the vector engine and Planner. Astropy is optional and is not included in the default requirements.
+The default dependencies are listed in [`requirements.txt`](requirements.txt). Astropy is optional and is not included in the standard dependency list.
 
-## Install and run from source
+## Installation
+
+### Run from source
+
+Clone the repository and install its dependencies:
 
 ```powershell
 git clone https://github.com/trinhtien48282-alt/AstroWeather.git
 cd AstroWeather
+
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+
 python -m pip install -r requirements.txt
 python main.py
 ```
 
-The app opens a desktop window and keeps running until you close it. Run commands from the repository directory.
+Run these commands from the repository directory and keep the terminal open while the application is running.
 
-### Optional Astropy support
+**If PowerShell blocks virtual-environment activation**, use the environment's Python executable directly:
 
-To enable the high-precision positions option when running from source:
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe main.py
+```
+
+### Windows executable
+
+When prebuilt releases are available, check the [GitHub Releases page](https://github.com/trinhtien48282-alt/AstroWeather/releases).
+
+To build the application yourself, follow [`BUILDING.md`](BUILDING.md).
+
+## Optional Astropy Support
+
+Astropy can enable optional high-precision astronomical position calculations supported by the application.
+
+Install it with:
 
 ```powershell
 python -m pip install astropy
 ```
 
-Astropy is not bundled in the standard Windows build. See [`BUILDING.md`](BUILDING.md) to include it in a build.
+Astropy is not included in the default dependencies or standard Windows build. See [`BUILDING.md`](BUILDING.md) for instructions on including it in a packaged build.
 
-## Configuration and local data
+## Configuration and Local Data
 
-The application stores its configuration, weather cache, and error log in a user-writable `AstroWeather` directory:
+AstroWeather stores its configuration, weather cache, and diagnostic logs in a user-writable application data directory.
 
-- Windows: `%APPDATA%\AstroWeather\`
-- Other platforms: `~/.config/AstroWeather/`
+| Platform | Data directory |
+|---|---|
+| Windows | `%APPDATA%\AstroWeather\` |
+| Other platforms | `~/.config/AstroWeather/` |
 
-The files are `config.json`, `cache.json`, and `error.log`. Weather data is cached so the last successful forecast can remain available when a refresh fails. Location search and forecast refresh require internet access.
+The application data directory can contain:
 
-## Build the Windows application
+- `config.json`: saved application settings.
+- `cache.json`: cached weather data.
+- `error.log`: diagnostic information for unexpected GUI callback and worker errors.
 
-The project includes a PyInstaller onedir specification. Follow [`BUILDING.md`](BUILDING.md) for build prerequisites, diagnostic options, and the first-run checklist. The executable and its supporting files are produced in `dist\AstroWeather\`.
+Cached data may allow AstroWeather to display the last successful forecast if a refresh fails. Fresh forecasts and location searches require an internet connection.
 
-**Build status:** the checked-in build guide says this configuration has not yet been built or run. No release or prebuilt download is advertised here.
+## Building for Windows
+
+AstroWeather includes a PyInstaller onedir specification.
+
+From the repository root, run:
+
+```powershell
+uv run pyinstaller --noconfirm AstroWeather.spec
+```
+
+The distribution is created in:
+
+```text
+dist\AstroWeather\
+```
+
+Launch `AstroWeather.exe` from that directory.
+
+> **Important:** Keep the supporting files and directories alongside the executable. The onedir distribution is not designed to work as a standalone EXE copied out of its folder.
+
+For build prerequisites, configuration, diagnostic options, and first-run checks, see [`BUILDING.md`](BUILDING.md).
 
 ## Troubleshooting
 
 <details>
-<summary>The app does not start</summary>
+<summary><strong>The application does not start</strong></summary>
 
-Run `python main.py` from the repository directory and check the Python traceback. Confirm Python 3.12 or newer, Tkinter, and the packages in `requirements.txt` are installed. The app writes unexpected GUI callback and worker errors to `error.log` in the data directory above.
+Run the application from the repository root:
+
+```powershell
+python main.py
+```
+
+Check the traceback for missing dependencies or configuration errors. Confirm that Python 3.12 or newer is installed and that the project dependencies are available.
+
+Unexpected GUI callback and worker errors may be recorded in `error.log` in the application data directory.
 
 </details>
 
 <details>
-<summary>Weather or city search fails</summary>
+<summary><strong>Weather forecasts or location searches fail</strong></summary>
 
-Check your internet connection. Weather and geocoding requests use Open-Meteo; service outages, network restrictions, and invalid responses can prevent updates. When available, the app continues to show the last cached forecast.
+Check your internet connection. Weather and geocoding requests depend on Open-Meteo services, so network restrictions, service outages, or invalid responses may prevent updates.
+
+When cached data is available, the application may continue displaying the last successful forecast.
 
 </details>
 
 <details>
-<summary>The Planner is unavailable</summary>
+<summary><strong>The observing planner is unavailable</strong></summary>
 
-The Planner requires NumPy. Install project dependencies with `python -m pip install -r requirements.txt`, then restart the app.
+The planner requires NumPy. Reinstall the project dependencies and restart AstroWeather:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+</details>
+
+<details>
+<summary><strong>The packaged Windows application fails to launch</strong></summary>
+
+Build from the repository root and inspect the terminal output. Consult `BUILDING.md` for diagnostic build options.
+
+Launch the executable from the complete `dist\AstroWeather\` directory rather than copying the EXE by itself.
 
 </details>
 
 ## Development
 
-The code is organized by responsibility: `astro/` for sky calculations, `astronomy/` for observing and equipment calculations, `weather/` for forecast data, `planner/` for target planning, and `gui/` for the desktop interface. `main.py` remains the entry point. See [`BUILDING.md`](BUILDING.md) for packaging instructions.
+The project is organized by responsibility:
 
-AstroWeather is under active development. Forecast-based seeing and transparency are proxies, and deep-sky visibility ratings are approximate. Astronomy calculations and observing scores should not be treated as authoritative measurements.
+| Directory or file | Purpose |
+|---|---|
+| `astro/` | Core celestial calculations |
+| `astronomy/` | Observing and equipment calculations |
+| `weather/` | Weather forecast data |
+| `planner/` | Observing target planning |
+| `gui/` | Desktop interface |
+| `main.py` | Application entry point |
+| `BUILDING.md` | Windows packaging instructions |
+
+AstroWeather is under active development, so features, calculations, and the interface may evolve.
+
+Bug reports, suggestions, and contributions are welcome through the [GitHub issue tracker](https://github.com/trinhtien48282-alt/AstroWeather/issues).
+
+## Limitations
+
+AstroWeather is an amateur astronomy planning tool, not a professional observatory system or a substitute for authoritative astronomical data.
+
+- **Atmospheric estimates:** Forecast-based seeing and transparency values are estimates or proxies, not direct measurements.
+- **Deep-sky visibility:** Visibility scores are approximate and depend on assumptions about observing conditions and equipment.
+- **Weather uncertainty:** A forecast cannot guarantee that a target will be observable.
+- **Calculation precision:** Results depend on the selected astronomy engine, its configuration, and the calculation being performed.
+
+Use the results as planning aids and evaluate actual conditions at your observing site.
+
+<p align="center">
+  <img src="assets/astroweather-banner.svg" alt="AstroWeather" width="100%">
+</p>
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=trinhtien48282-alt%2Fastroweather&type=date&legend=top-left">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=trinhtien48282-alt/astroweather&type=date&legend=top-left" />
-  </picture>
-</a>
+[![Star History Chart](https://api.star-history.com/svg?repos=trinhtien48282-alt/AstroWeather&type=date)](https://star-history.com/#trinhtien48282-alt/AstroWeather&Date)
+
+---
+
+<div align="center">
+
+*Clear skies. Dark nights. Better observations.* 🌌
+
+</div>

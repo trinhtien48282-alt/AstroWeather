@@ -1,1 +1,1 @@
-"""AstroWeather GUI (CustomTkinter): the application window and its pages."""
+"""AstroWeather PySide6 interface and pages."""

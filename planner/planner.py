@@ -186,7 +186,7 @@ def positions_astropy(ts, lat, lon, elev=0.0, pressure=0.0):
 def compute_positions(ts, lat, lon, elev=0.0, pressure=1013.0):
     """Pick the engine: Astropy (if enabled and working) > NumPy > pure Python. Returns (positions, name, note)."""
     note = ""
-    if PERF["astropy"]:
+    if PERF["astropy"] and HAVE_ASTROPY:
         try:
             return positions_astropy(ts, lat, lon, elev, pressure), "Astropy", ""
         except Exception as e:
