@@ -19,10 +19,18 @@ LINES = {"type": "FeatureCollection", "features": [
     {"type": "Feature", "id": "Tst", "properties": {}, "geometry": {
         "type": "MultiLineString", "coordinates": [[[-170, 10], [-160, 20], [-150, 30]], [[10, -20], [20, -30]]]}},
     {"type": "Feature", "id": "Lin", "properties": {}, "geometry": {
-        "type": "LineString", "coordinates": [[0, 0], [5, 5], [5, 5.0]]}}]}
+        "type": "LineString", "coordinates": [[0, 0], [5, 5], [5, 5.0]]}},
+    {"type": "Feature", "id": "Dup", "properties": {}, "geometry": {
+        "type": "MultiLineString", "coordinates": [[[100, 0], [110, 0]]]}},
+    {"type": "Feature", "id": "Dup", "properties": {}, "geometry": {
+        "type": "MultiLineString", "coordinates": [[[-100, 0], [-90, 0]]]}}]}
 NAMES = {"type": "FeatureCollection", "features": [
     {"type": "Feature", "id": "Tst", "properties": {"desig": "Tst", "name": "Testudo", "en": "Test Turtle"},
-     "geometry": {"type": "Point", "coordinates": [-165, 15]}}]}
+     "geometry": {"type": "Point", "coordinates": [-165, 15]}},
+    {"type": "Feature", "id": "Dup", "properties": {"name": "Duplicus Prior", "en": "Twin"},
+     "geometry": {"type": "Point", "coordinates": [10, 10]}},
+    {"type": "Feature", "id": "Dup", "properties": {"name": "Duplicus Posterior", "en": "Twin"},
+     "geometry": {"type": "Point", "coordinates": [20, 10]}}]}
 JD, LAT, LON = 2461000.5, 9.1769, 105.1524  # a fixed instant and Ca Mau
 
 
@@ -42,8 +50,28 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(d["Tst"][1], [(10.0, -20.0), (20.0, -30.0)])
         self.assertEqual(len(d["Lin"]), 1)
 
-    def test_names(self):
-        self.assertEqual(con.parse_names(NAMES), {"Tst": ("Test Turtle", 195.0, 15.0)})
+    def test_names_use_the_latin_name_not_the_english_gloss(self):
+        n = con.parse_names(NAMES)
+        self.assertEqual(n["Tst"], ("Testudo", 195.0, 15.0))
+        self.assertNotIn("Test Turtle", [v[0] for v in n.values()])
+
+    def test_duplicate_ids_keep_both_features_in_order(self):
+        d, n = con.parse_lines(LINES), con.parse_names(NAMES)
+        self.assertEqual(sorted(k for k in d if k.startswith("Dup")), ["Dup", "Dup#2"])
+        self.assertEqual([n["Dup"][0], n["Dup#2"][0]], ["Duplicus Prior", "Duplicus Posterior"])
+        self.assertEqual(d["Dup"][0][0][0], 100.0)
+        self.assertEqual(d["Dup#2"][0][0][0], 260.0)
+
+    def test_label_sits_at_the_centre_of_the_figure_even_across_ra_zero(self):
+        s = con.ConstellationSet({"W": [[(359.0, 10.0), (1.0, 10.0)]]}, {"W": ("Wrap", 180.0, 0.0)})
+        (name, ra, dec), = s.labels
+        self.assertEqual(name, "Wrap")
+        self.assertTrue(ra < 0.01 or ra > 359.99)  # not 180, not the naive mean
+        self.assertAlmostEqual(dec, 10.0, delta=0.05)
+
+    def test_label_falls_back_to_the_anchor_without_lines(self):
+        s = con.ConstellationSet({}, {"N": ("Nolines", 40.0, -20.0)})
+        self.assertEqual(s.labels, [("Nolines", 40.0, -20.0)])
 
     def test_malformed_documents_raise(self):
         for bad in ({}, {"features": 3}, {"features": [{"geometry": {}}]},
@@ -66,7 +94,7 @@ class LoadTests(unittest.TestCase):
             self.write(d, con.LINES_FILE, LINES)
             self.write(d, con.NAMES_FILE, NAMES)
             s = con.load_set(d)
-        self.assertEqual((s.n_lines, len(s.segs), len(s.labels)), (2, 5, 1))  # Tst: 2+1 segments, Lin: 2
+        self.assertEqual((s.n_lines, len(s.segs), len(s.labels)), (4, 7, 3))  # Tst 3, Lin 2, Dup 1+1 segments; 3 names
 
     def test_missing_files_give_an_empty_set(self):
         with tempfile.TemporaryDirectory() as d:
@@ -151,8 +179,8 @@ class ProjectionTests(unittest.TestCase):
 
     def test_label_below_horizon_is_dropped(self):
         PERF["numpy"] = False
-        a, _ = altaz(*precess(195.0, 15.0, JD), JD, LAT, LON)
-        self.assertEqual(len(self.set.label_positions(JD, LAT, LON)), 1 if a > 0 else 0)
+        up = sum(1 for _n, ra, dec in self.set.labels if altaz(*precess(ra, dec, JD), JD, LAT, LON)[0] > 0)
+        self.assertEqual(len(self.set.label_positions(JD, LAT, LON)), up)
 
 
 @unittest.skipUnless(os.path.exists(os.path.join(con.data_dir(), con.LINES_FILE)), "bundled data not added yet")
@@ -163,6 +191,17 @@ class BundledDataTests(unittest.TestCase):
         # Betelgeuse (RA 5.919 h, Dec +7.407, J2000) must be an endpoint of some Orion segment
         bet_ra, bet_dec = 5.919 * 15.0, 7.407
         self.assertTrue(any(abs(ra - bet_ra) < 0.6 and abs(dec - bet_dec) < 0.6 for ra, dec in zip(s.pts_ra, s.pts_dec)))
+
+    @unittest.skipUnless(os.path.exists(os.path.join(con.data_dir(), con.NAMES_FILE)), "names file not added")
+    def test_real_names_are_latin_and_complete(self):
+        s = con.load_set()
+        names = [n for n, _r, _d in s.labels]
+        self.assertIn("Triangulum", names)
+        self.assertIn("Puppis", names)
+        self.assertNotIn("Poop Deck", names)
+        self.assertNotIn("Triangle", names)
+        self.assertEqual(names.count("Serpens Caput") + names.count("Serpens Cauda"), 2)
+        self.assertGreaterEqual(len(names), 85)
 
 
 if __name__ == "__main__":

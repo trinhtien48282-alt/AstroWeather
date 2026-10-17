@@ -42,6 +42,16 @@ def _fid(f, what):
     return cid
 
 
+def _key(out, cid):
+    """Serpens is two features with the same id ("Ser"): keep both, in file order (Ser, Ser#2)."""
+    if cid not in out:
+        return cid
+    n = 2
+    while f"{cid}#{n}" in out:
+        n += 1
+    return f"{cid}#{n}"
+
+
 def _point(lon, lat, what):
     lon, lat = float(lon), float(lat)
     if not (-180.0 <= lon <= 360.0 and -90.0 <= lat <= 90.0):
@@ -63,12 +73,12 @@ def parse_lines(doc):
             raise ValueError(f"lines: {cid}: unsupported geometry {g.get('type')!r}")
         if not isinstance(raw, list):
             raise ValueError(f"lines: {cid}: no coordinates")
-        out[cid] = [pl for pl in ([_point(p[0], p[1], f"lines {cid}") for p in line] for line in raw) if len(pl) >= 2]
+        out[_key(out, cid)] = [pl for pl in ([_point(p[0], p[1], f"lines {cid}") for p in line] for line in raw) if len(pl) >= 2]
     return out
 
 
 def parse_names(doc):
-    """GeoJSON names document -> {id: (name, ra_deg, dec_deg)}: label anchor in J2000."""
+    """GeoJSON names document -> {id: (latin name, ra_deg, dec_deg)}: upstream label anchor in J2000."""
     out = {}
     for f in _features(doc, "names"):
         cid = _fid(f, "names")
@@ -76,9 +86,10 @@ def parse_names(doc):
         if g.get("type") != "Point":
             raise ValueError(f"names: {cid}: unsupported geometry {g.get('type')!r}")
         props = f.get("properties") or {}
-        name = props.get("en") or props.get("name") or cid
+        # "name" is the IAU Latin name ("Triangulum", "Puppis"); "en" is the English gloss ("Triangle", "Poop Deck")
+        name = props.get("name") or props.get("la") or cid
         ra, dec = _point(g["coordinates"][0], g["coordinates"][1], f"names {cid}")
-        out[cid] = (str(name), ra, dec)
+        out[_key(out, cid)] = (str(name), ra, dec)
     return out
 
 
@@ -94,7 +105,12 @@ class ConstellationSet:
                     self.pts_ra.append(ra)
                     self.pts_dec.append(dec)
                 self.segs.extend((base + k, base + k + 1) for k in range(len(pl) - 1))
-        self.labels = [(n, ra, dec) for n, ra, dec in names.values()]
+        self.labels = []
+        for key, (n, ra, dec) in names.items():
+            pts = [p for pl in lines.get(key, []) for p in pl]
+            if pts:  # centre of the stick figure; the upstream anchor is only a fallback
+                ra, dec = _centroid(pts)
+            self.labels.append((n, ra, dec))
         self.n_lines = len(lines)
 
     def _altaz(self, ra, dec, jd, lat, lon):
@@ -129,6 +145,18 @@ class ConstellationSet:
         """[(name, alt, az)] for labels above the horizon."""
         alts, azs = self._altaz([l[1] for l in self.labels], [l[2] for l in self.labels], jd, lat, lon)
         return [(l[0], a, z) for l, a, z in zip(self.labels, alts, azs) if a > 0]
+
+
+def _centroid(pts):
+    """Mean direction of (ra_deg, dec_deg) points: average unit vectors, so RA wrap-around (359 vs 1 deg) is safe."""
+    x = y = z = 0.0
+    for ra, dec in pts:
+        r, d = math.radians(ra), math.radians(dec)
+        x, y, z = x + math.cos(d) * math.cos(r), y + math.cos(d) * math.sin(r), z + math.sin(d)
+    n = math.sqrt(x * x + y * y + z * z)
+    if n < 1e-9:  # points cancel out: no meaningful centre
+        return pts[0]
+    return math.degrees(math.atan2(y, x)) % 360.0, math.degrees(math.asin(z / n))
 
 
 def _horizon_cut(alt_up, az_up, alt_dn, az_dn):
