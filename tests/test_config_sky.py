@@ -26,17 +26,17 @@ class SkyConfigTests(unittest.TestCase):
 
     def test_defaults_are_off_and_independent(self):
         sky = self.load_with(None)["sky"]
-        self.assertEqual(sky, {"constellation_lines": False, "constellation_names": False})
+        self.assertEqual(sky, {"constellation_lines": False, "constellation_names": False, "star_mag_limit": 5.0})
 
     def test_old_config_without_sky_key_gets_defaults_and_keeps_user_values(self):
         cfg = self.load_with({"bortle": 7, "units": {"temp": "F", "wind": "mph"}, "scope": {"aperture": 114.0}})
-        self.assertEqual(cfg["sky"], {"constellation_lines": False, "constellation_names": False})
+        self.assertEqual(cfg["sky"], {"constellation_lines": False, "constellation_names": False, "star_mag_limit": 5.0})
         self.assertEqual((cfg["bortle"], cfg["units"]["temp"], cfg["scope"]["aperture"]), (7, "F", 114.0))
         self.assertEqual(cfg["scope"]["focal_length"], 700.0)  # untouched default still filled in
 
     def test_partial_sky_dict_keeps_the_other_default(self):
         sky = self.load_with({"sky": {"constellation_lines": True}})["sky"]
-        self.assertEqual(sky, {"constellation_lines": True, "constellation_names": False})
+        self.assertEqual(sky, {"constellation_lines": True, "constellation_names": False, "star_mag_limit": 5.0})
 
     def test_toggles_round_trip_through_save(self):
         with tempfile.TemporaryDirectory() as d:
@@ -46,7 +46,7 @@ class SkyConfigTests(unittest.TestCase):
                 cfg = config.load_config()
                 cfg["sky"]["constellation_names"] = True
                 config.save_config(cfg)
-                self.assertEqual(config.load_config()["sky"], {"constellation_lines": False, "constellation_names": True})
+                self.assertEqual(config.load_config()["sky"], {"constellation_lines": False, "constellation_names": True, "star_mag_limit": 5.0})
             finally:
                 config.CONFIG_DIR, config.CONFIG_PATH = old
 

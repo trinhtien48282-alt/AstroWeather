@@ -20,6 +20,8 @@ from astronomy.scoring import BORTLE_NELM
 from gui.theme import DEEP, PLANET_COLORS
 from mathutil import clamp, rad
 from weather.analysis import rank_targets
+from astro.sky_style import layer_colors, moon_color, moon_phase_spans, sky_colors
+from astro.stars import get_stars
 
 ZOOM_MAX = 8.0
 # Wikipedia titles that differ from the catalog name (the plain name is a disambiguation page or another article)
@@ -84,6 +86,17 @@ class SkyPage:
             qt.Switch(ctrl, text=text, variable=var, font=self.f_small,
         command=lambda k=key, v=var: self.on_sky_layer(k, v.get())).pack(side="left", padx=(12, 0))
         self.lbl_skyinfo = qt.Label(page, text="", font=self.f_small, text_color="#8a93a6", anchor="w")
+        qt.Label(ctrl, text="Stars", font=self.f_small).pack(side="left", padx=(12, 4))
+        sl = qt.Slider(
+            ctrl,
+            from_=0,
+            to=6,
+            number_of_steps=12,
+            width=110,
+            command=self.on_star_limit,
+        )
+        sl.set(float(self.cfg["sky"].get("star_mag_limit", 5.0)))
+        sl.pack(side="left")
         self.lbl_skyinfo.grid(row=1, column=0, columnspan=2, sticky="w", padx=26, pady=(0, 4))
         self.sky_canvas = qt.Canvas(page, width=380, height=380, bg="#0a0d18", highlightthickness=0)
         self.sky_canvas.grid(row=2, column=0, sticky="nsew", padx=(24, 8), pady=(0, 14))
@@ -99,7 +112,7 @@ class SkyPage:
         self.box_info = qt.TextBox(right, height=250, font=self.f_mono, fg_color=DEEP, state="disabled", wrap="word")
         self.box_info.grid(row=0, column=0, sticky="ew", pady=(0, 6))
         self.btn_wiki = qt.Button(right, text="Open the Wikipedia article", width=190, font=self.f_small, state="disabled",
-                                      command=self.open_wiki)
+        command=self.open_wiki)
         self.btn_wiki.grid(row=1, column=0, sticky="w", pady=(0, 6))
         tabs = qt.TabView(right)
         tabs.grid(row=2, column=0, sticky="nsew")
@@ -177,6 +190,15 @@ class SkyPage:
         self.cfg["sky"][key] = bool(value)
         save_config(self.cfg)
         self.sky_kick()
+
+    def on_star_limit(self, value):
+        self.cfg["sky"]["star_mag_limit"] = round(float(value), 1)
+        self.sky_kick()
+        if getattr(self, "_star_save", None):
+            self.after_cancel(self._star_save)
+        self._star_save = self.after(
+            400, lambda: save_config(self.cfg)
+        )
 
     def sky_clamp_pan(self):
         w, h, cx, cy, R = self.sky_geometry()
@@ -315,8 +337,12 @@ class SkyPage:
         off = self.analysis["offset"] if self.analysis else 0
         s = sun_pos(jd)
         sun_alt, sun_az = altaz(s["ra"], s["dec"], jd, lat, lon)
-        bg = "#0a0d18" if sun_alt < -18 else "#101a3a" if sun_alt < -12 else "#1a2650" if sun_alt < -6 else "#2a3a6a" if sun_alt < -0.8 else "#3d6a9e"
-        c.create_oval(ox - Rz, oy - Rz, ox + Rz, oy + Rz, fill=bg, outline="#4a5d8f", width=2)
+        n_ring = 16
+        ring = sky_colors(sun_alt, n_ring)  # index 0 = zenith ... n-1 = horizon (darker rim)
+        for i in range(n_ring - 1, -1, -1):
+            rr = Rz * (i + 1) / n_ring
+            c.create_oval(ox - rr, oy - rr, ox + rr, oy + rr, fill="#%02x%02x%02x" % ring[i], outline="")
+        c.create_oval(ox - Rz, oy - Rz, ox + Rz, oy + Rz, outline="#4a5d8f", width=2)
         for alt in (30, 60):
             r = Rz * (90 - alt) / 90.0
             c.create_oval(ox - r, oy - r, ox + r, oy + r, outline="#26335a", dash=(2, 4))
@@ -355,6 +381,28 @@ class SkyPage:
         hits = []  # (x, y, hit radius, key, payload): what a click at that spot selects
 
         s_alts, s_azs = star_altaz(jd, lat, lon)
+        mag_lim = clamp(
+            float(self.cfg["sky"].get("star_mag_limit", 5.0)),
+            0.0,
+            6.0,
+        )
+        if mag_lim > 0:
+            fset, ferr = get_stars(
+                [(h * 15.0, d) for _n, h, d, _m in BRIGHT_STARS]
+            )
+            if ferr and ferr != getattr(self, "_star_err", None):
+                self._star_err = ferr
+                log_error(ferr)
+
+            for alt, az, mag in fset.visible(jd, lat, lon, mag_lim):
+                x, y = project(alt, az)
+                if vis(x, y):
+                    r = max(0.8, 2.6 - 0.45 * mag) * fs
+                    c.create_oval(
+                        x - r, y - r, x + r, y + r,
+                        fill="#c9d3f0",
+                        outline="",
+                    )
         for (name, ra_h, dec, mag), alt, az in zip(BRIGHT_STARS, s_alts, s_azs):
             if alt <= 0:
                 continue
@@ -406,9 +454,17 @@ class SkyPage:
         if mi["alt"] > 0:
             x, y = project(mi["alt"], mi["az"])
             if vis(x, y):
-                m = 9 * fs
-                c.create_oval(x - m, y - m, x + m, y + m, fill="#e8e2c0", outline="#fff6c0")
-                c.create_text(x + m + 4, y, text=f"Moon {mi['illum'] * 100:.0f}%", anchor="w", fill="#f2ecc8", font=font(9, True))
+                m = 11 * fs
+                sx, sy = project(sun_alt, sun_az)  # also valid below the horizon: the bright limb faces the Sun
+                th = math.atan2(sy - y, sx - x)
+                ct, st_ = math.cos(th), math.sin(th)
+                c.create_oval(x - m, y - m, x + m, y + m, fill="#23262e", outline="#5b6070")
+                col = "#%02x%02x%02x" % moon_color(mi["alt"])
+                dy = 2 * m / max(8, int(m * 2))
+                for yy, x0, x1 in moon_phase_spans(m, mi["illum"]):
+                    c.create_line(x + x0 * ct - yy * st_, y + x0 * st_ + yy * ct,
+                                  x + x1 * ct - yy * st_, y + x1 * st_ + yy * ct, fill=col, width=dy + 1)
+                c.create_text(x + m + 4, y, text=f"Moon {mi['illum'] * 100:.0f}%", anchor="w", fill=col, font=font(9, True))
                 hits.append((x, y, m + 4, ("moon",), mi))
         if sun_alt > 0:
             x, y = project(sun_alt, sun_az)
