@@ -234,10 +234,6 @@ AstroWeather is an amateur astronomy planning tool, not a professional observato
 
 Use the results as planning aids and evaluate actual conditions at your observing site.
 
-<p align="center">
-  <img src="assets/astroweather-banner.svg" alt="AstroWeather" width="100%">
-</p>
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=trinhtien48282-alt/AstroWeather&type=date)](https://star-history.com/#trinhtien48282-alt/AstroWeather&Date)
