@@ -20,7 +20,7 @@ from astronomy.scoring import BORTLE_NELM
 from gui.theme import DEEP, PLANET_COLORS
 from mathutil import clamp, rad
 from weather.analysis import rank_targets
-from astro.sky_style import layer_colors, moon_color, moon_phase_spans, sky_colors
+from astro.sky_style import bv_color, layer_colors, moon_color, moon_phase_spans, sky_colors
 from astro.stars import get_stars
 
 ZOOM_MAX = 8.0
@@ -37,8 +37,8 @@ SKY_LEGEND = (
     "twilight, black = Sun below -18 deg.\n\n"
     "SYMBOLS\n"
     "White dot       star (bigger = brighter). Name shown for mag < 1.3, or for all when zoomed 2x or more.\n"
-    "Square          deep-sky object or double star from the catalog. Its colour is the rating in your scope:\n"
-    "                green Easy, yellow Moderate, orange Hard, grey Beyond. Shapes do not encode the object type: click one "
+    "Marker          deep-sky object or double star from the catalog. Its colour is the rating in your scope:\n"
+    "                green Easy, yellow Moderate, orange Hard, grey Beyond. Shape: circle = cluster, diamond = galaxy, square = other. Click one "
     "to read its type.\n"
     "Coloured disc  planet, with its name. Size follows brightness.\n"
     "Pale disc       Moon, with the percent of the disc lit.\n"
@@ -64,6 +64,7 @@ class SkyPage:
     """Sky chart page: live alt-az chart with a time slider, wheel zoom, drag pan, click-to-inspect and Wikipedia look-ups."""
 
     def build_sky(self, page):
+        self._sky_cache = None
         self.sky_zoom, self.sky_pan = 1.0, [0.0, 0.0]
         self.sky_hits, self.sky_sel, self.sky_press, self.sky_lines = [], None, None, []
         self.wiki_req, self.wiki_cache, self.wiki_url = 0, {}, ""
@@ -322,6 +323,21 @@ class SkyPage:
             webbrowser.open(self.wiki_url)
 
     # ---- drawing -----------------------------------------------------------------------------------------------------
+    def _sky_state(self, ts, jd, lat, lon, ap_eff, nelm, combos, cap):
+        """Everything that depends only on time, place and gear (not on zoom, pan or toggles): cached, so those redraws skip it."""
+        key = (ts, lat, lon, round(ap_eff, 3), nelm, round(cap, 2), tuple((c["label"], round(c["mag"], 2)) for c in combos))
+        if self._sky_cache and self._sky_cache[0] == key:
+            return self._sky_cache[1]
+        planets = []
+        for name in PLANETS:
+            st = planet_state(name, jd)
+            alt, az = altaz(st["ra"], st["dec"], jd, lat, lon)
+            planets.append((name, st, alt, az))
+        state = {"stars": star_altaz(jd, lat, lon), "planets": planets, "moon": moon_info(ts, lat, lon),
+                 "rows": rank_targets(ts, lat, lon, ap_eff, nelm, combos, cap)}
+        self._sky_cache = (key, state)
+        return state
+
     def draw_sky(self, table=True):
         c = self.sky_canvas
         c.delete("all")
@@ -337,7 +353,7 @@ class SkyPage:
         off = self.analysis["offset"] if self.analysis else 0
         s = sun_pos(jd)
         sun_alt, sun_az = altaz(s["ra"], s["dec"], jd, lat, lon)
-        n_ring = 16
+        n_ring = 24
         ring = sky_colors(sun_alt, n_ring)  # index 0 = zenith ... n-1 = horizon (darker rim)
         for i in range(n_ring - 1, -1, -1):
             rr = Rz * (i + 1) / n_ring
@@ -380,7 +396,15 @@ class SkyPage:
 
         hits = []  # (x, y, hit radius, key, payload): what a click at that spot selects
 
-        s_alts, s_azs = star_altaz(jd, lat, lon)
+        cfg = self.cfg
+        nelm = BORTLE_NELM.get(int(cfg["bortle"]), 5.6)
+        sc = cfg["scope"]
+        obs = float(sc.get("obstruction_mm", 0) or 0)
+        ap_eff = math.sqrt(max(float(sc["aperture"]) ** 2 - obs * obs, 1.0))
+        combos = build_combos(sc, cfg["eyepieces"], cfg["barlows"])
+        cap = self.analysis["tonight"]["cap"] if self.analysis else 2 * ap_eff
+        state = self._sky_state(ts, jd, lat, lon, ap_eff, nelm, combos, cap)
+        s_alts, s_azs = state["stars"]
         mag_lim = clamp(
             float(self.cfg["sky"].get("star_mag_limit", 5.0)),
             0.0,
@@ -394,13 +418,13 @@ class SkyPage:
                 self._star_err = ferr
                 log_error(ferr)
 
-            for alt, az, mag in fset.visible(jd, lat, lon, mag_lim):
+            for alt, az, mag, bv in fset.visible(jd, lat, lon, mag_lim):
                 x, y = project(alt, az)
                 if vis(x, y):
                     r = max(0.8, 2.6 - 0.45 * mag) * fs
                     c.create_oval(
                         x - r, y - r, x + r, y + r,
-                        fill="#c9d3f0",
+                        fill=bv_color(bv),
                         outline="",
                     )
         for (name, ra_h, dec, mag), alt, az in zip(BRIGHT_STARS, s_alts, s_azs):
@@ -415,14 +439,7 @@ class SkyPage:
                 c.create_text(x + r + 3, y, text=name, anchor="w", fill="#8e9bc4", font=font(8))
             hits.append((x, y, max(8.0, r + 4), ("star", name), (name, ra_h, dec, mag, alt, az)))
 
-        cfg = self.cfg
-        nelm = BORTLE_NELM.get(int(cfg["bortle"]), 5.6)
-        sc = cfg["scope"]
-        obs = float(sc.get("obstruction_mm", 0) or 0)
-        ap_eff = math.sqrt(max(float(sc["aperture"]) ** 2 - obs * obs, 1.0))
-        combos = build_combos(sc, cfg["eyepieces"], cfg["barlows"])
-        cap = self.analysis["tonight"]["cap"] if self.analysis else 2 * ap_eff
-        rows = rank_targets(ts, lat, lon, ap_eff, nelm, combos, cap)
+        rows = state["rows"]
         colors = {"Easy": "#4cc38a", "Moderate": "#e0b84c", "Hard": "#d98a52", "Beyond": "#6b7390"}
         for r in rows:
             if r["alt"] <= 3:
@@ -432,16 +449,19 @@ class SkyPage:
                 continue
             col = colors[r["rating"]]
             m = 3 * fs
-            c.create_rectangle(x - m, y - m, x + m, y + m, outline=col)
+            kind = r["obj"]["kind"]
+            if kind in ("OC", "GC"):
+                c.create_oval(x - m, y - m, x + m, y + m, outline=col)
+            elif kind == "GX":
+                c.create_line(x - m, y, x, y - m, x + m, y, x, y + m, x - m, y, fill=col)
+            else:
+                c.create_rectangle(x - m, y - m, x + m, y + m, outline=col)
             if (r["rating"] in ("Easy", "Moderate") and r["alt"] > 12) or (z >= 2.5 and r["rating"] != "Beyond"):
                 c.create_text(x + m + 3, y, text=r["obj"]["id"], anchor="w", fill=col, font=font(8))
             hits.append((x, y, max(8.0, m + 5), ("dso", r["obj"]["id"]), r))
 
-        planet_list = []
-        for name in PLANETS:
-            st = planet_state(name, jd)
-            alt, az = altaz(st["ra"], st["dec"], jd, lat, lon)
-            planet_list.append((name, st, alt, az))
+        planet_list = state["planets"]
+        for name, st, alt, az in planet_list:
             if alt > 0:
                 x, y = project(alt, az)
                 if not vis(x, y):
@@ -450,7 +470,7 @@ class SkyPage:
                 c.create_oval(x - r, y - r, x + r, y + r, fill=PLANET_COLORS[name], outline="")
                 c.create_text(x + r + 3, y, text=name, anchor="w", fill=PLANET_COLORS[name], font=font(9, True))
                 hits.append((x, y, max(10.0, r + 4), ("planet", name), (name, st, alt, az)))
-        mi = moon_info(ts, lat, lon)
+        mi = state["moon"]
         if mi["alt"] > 0:
             x, y = project(mi["alt"], mi["az"])
             if vis(x, y):

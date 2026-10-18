@@ -61,22 +61,23 @@ class StarSet:
         self.mags = [r[3] for r in kept]
         self.ra = [r[1] for r in kept]
         self.dec = [r[2] for r in kept]
+        self.bv = [r[4] for r in kept]  # B-V or None
         self.n_skipped = len(skip)
 
     def visible(self, jd, lat, lon, mag_limit):
-        """[(alt, az, mag)] for stars up to mag_limit that are above the horizon (degrees, azimuth from north)."""
+        """[(alt, az, mag, bv or None)] for stars up to mag_limit that are above the horizon (degrees, azimuth from north)."""
         n = bisect.bisect_right(self.mags, mag_limit)
         if n == 0:
             return []
         if use_numpy():
             a, z = np_altaz(*np_precess(np.asarray(self.ra[:n], float), np.asarray(self.dec[:n], float), jd), jd, lat, lon)
             idx = np.nonzero(a > 0)[0]
-            return [(float(a[i]), float(z[i]), self.mags[i]) for i in idx]
+            return [(float(a[i]), float(z[i]), self.mags[i], self.bv[i]) for i in idx]
         out = []
-        for r, d, m in zip(self.ra[:n], self.dec[:n], self.mags[:n]):
+        for r, d, m, b in zip(self.ra[:n], self.dec[:n], self.mags[:n], self.bv[:n]):
             a, z = altaz(*precess(r, d, jd), jd, lat, lon)
             if a > 0:
-                out.append((a, z, m))
+                out.append((a, z, m, b))
         return out
 
 
