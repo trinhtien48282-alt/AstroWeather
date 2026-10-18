@@ -30,15 +30,24 @@ class SkyGradient(unittest.TestCase):
         self.assertLess(lum(st.sky_colors(-30, 5)[0]), 20)
         self.assertGreater(lum(st.sky_colors(40, 5)[0]), 70)
 
-    def test_horizon_is_darker_than_zenith_by_day_and_endpoints_match_stops(self):
+    def test_day_horizon_is_paler_than_zenith_and_endpoints_match_stops(self):
         g = st.sky_colors(30, 6)
-        self.assertLess(lum(g[-1]), lum(g[0]))
+        self.assertGreater(lum(g[-1]), lum(g[0]))
         self.assertEqual(g[0], tuple(st.SKY_STOPS[0][1][0]))
         self.assertEqual(g[-1], tuple(st.SKY_STOPS[0][1][1]))
+
+    def test_sunset_rim_is_orange(self):
+        rim = st.sky_colors(0.0, 6)[-1]
+        self.assertGreater(rim[0], rim[2] + 100)
 
     def test_twilight_has_a_warm_rim(self):
         rim = st.sky_colors(-1.0, 6)[-1]
         self.assertGreater(rim[0], rim[2])  # red above blue
+
+    def test_midnight_horizon_glows_blue_not_flat_black(self):
+        g = st.sky_colors(-40, 6)
+        self.assertGreater(g[-1][2], g[0][2] + 20)
+        self.assertGreater(lum(g[-1]), lum(g[0]))
 
     def test_continuous_across_sun_altitudes(self):
         prev = st.sky_colors(25, 4)
@@ -49,6 +58,21 @@ class SkyGradient(unittest.TestCase):
             for p, c in zip(prev, cur):
                 self.assertLess(max(abs(p[i] - c[i]) for i in range(3)), 9)
             prev = cur
+
+
+class StarColor(unittest.TestCase):
+    def test_missing_index_is_neutral(self):
+        self.assertEqual(st.bv_color(None), st.STAR_NEUTRAL)
+        self.assertEqual(st.bv_color(float("nan")), st.STAR_NEUTRAL)
+
+    def test_blue_to_orange_and_clamped(self):
+        def rgb(h):
+            return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
+        hot, cool = rgb(st.bv_color(-0.3)), rgb(st.bv_color(1.5))
+        self.assertGreater(hot[2], hot[0])
+        self.assertGreater(cool[0], cool[2])
+        self.assertEqual(st.bv_color(-5.0), st.bv_color(-0.3))
+        self.assertEqual(st.bv_color(9.0), st.bv_color(1.6))
 
 
 class LayerColors(unittest.TestCase):

@@ -3,20 +3,41 @@
 These are STYLISED approximations for a pleasant chart, not radiative-transfer results.
 """
 import math
+from functools import lru_cache
 
 MOON_BASE = (236, 230, 200)
-SKY_STOPS = (  # Sun altitude (deg) -> (zenith RGB, horizon RGB); horizon is deliberately darker than the zenith
-    (20.0, ((52, 112, 190), (36, 82, 142))),
-    (6.0, ((46, 98, 170), (40, 78, 130))),
-    (0.0, ((38, 70, 132), (112, 62, 70))),     # sunrise/sunset: warm, dim rim
-    (-6.0, ((22, 40, 92), (62, 38, 66))),      # civil twilight end: violet rim
-    (-12.0, ((10, 20, 56), (22, 24, 52))),     # nautical
-    (-18.0, ((4, 8, 22), (6, 8, 18))),         # astronomical night
+SKY_STOPS = (  # Sun altitude (deg) -> (zenith RGB, horizon RGB); by day the horizon is paler (haze), at dusk it glows
+    (20.0, ((40, 100, 190), (130, 175, 225))),
+    (6.0, ((46, 96, 175), (150, 170, 205))),
+    (0.0, ((44, 74, 140), (236, 140, 90))),    # sunrise/sunset: orange rim, mauve in between
+    (-6.0, ((24, 38, 92), (112, 70, 120))),    # civil twilight end: violet-pink rim
+    (-12.0, ((10, 20, 56), (40, 48, 100))),    # nautical: residual blue glow
+    (-18.0, ((4, 8, 22), (16, 26, 60))),       # astronomical night: faint blue horizon glow
 )
+# B-V colour index -> RGB, kept pale so the tint is subtle
+BV_STOPS = ((-0.3, (155, 176, 255)), (0.0, (202, 215, 255)), (0.6, (255, 244, 234)),
+            (1.0, (255, 222, 180)), (1.6, (255, 190, 120)))
+STAR_NEUTRAL = "#c9d3f0"
 
 
 def _lerp(a, b, t):
     return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+@lru_cache(maxsize=64)
+def _bv_hex(tenths):
+    bv = max(BV_STOPS[0][0], min(BV_STOPS[-1][0], tenths / 10.0))
+    for (x0, c0), (x1, c1) in zip(BV_STOPS, BV_STOPS[1:]):
+        if bv <= x1:
+            return "#%02x%02x%02x" % tuple(round(v) for v in _lerp(c0, c1, (bv - x0) / (x1 - x0)))
+    return "#%02x%02x%02x" % BV_STOPS[-1][1]
+
+
+def bv_color(bv):
+    """Hex colour for a B-V index (quantised to 0.1); None/NaN -> neutral, never an invented colour."""
+    if bv is None or bv != bv:
+        return STAR_NEUTRAL
+    return _bv_hex(round(bv * 10))
 
 
 def moon_color(alt):
