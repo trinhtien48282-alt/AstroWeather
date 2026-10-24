@@ -1,11 +1,10 @@
 # Building the Windows application
 
 AstroWeather is packaged with **PyInstaller** as an *onedir* build: a folder containing `AstroWeather.exe` plus the Python
-runtime, CustomTkinter (with its theme files), NumPy and everything else the app imports. The folder runs on a Windows PC
+runtime, PySide6, NumPy and everything else the app imports. The folder runs on a Windows PC
 that has no Python installed. Nothing is downloaded when the app starts.
 
-> Status: this configuration was written without access to a Windows build machine. It has **not** been built or run yet.
-> Work through "First build checklist" below and report any problem.
+> Status: the PySide6 onedir build and an isolated offscreen startup passed on Windows. Complete the interactive checklist on a target PC before distributing.
 
 ## Build environment
 
@@ -21,7 +20,7 @@ python -m pip install --upgrade pip
 pip install -r requirements-build.txt
 ```
 
-(`requirements-build.txt` = `customtkinter`, `numpy`, `pyinstaller>=6`. Once a build works, run
+(`requirements-build.txt` includes `PySide6`, `numpy`, and `pyinstaller>=6`. Once a build works, run
 `pip freeze > requirements-lock.txt` and keep that file to reproduce the exact versions.)
 
 ## Build
@@ -62,7 +61,7 @@ Unchanged from the Python version, and always in a user-writable place (never ne
 ## First build checklist (please run, especially on a PC without Python)
 
 1. The build finishes and `dist\AstroWeather\AstroWeather.exe` exists.
-2. Start it. The window appears with the dark theme and the sidebar (this proves CustomTkinter's files were bundled).
+2. Start it. The window appears with the dark theme and the sidebar (this proves PySide6's Qt libraries and platform plugin were bundled).
 3. Click through Tonight, Forecast, Planner, Sky chart, Telescope (all three tabs), Settings.
 4. With internet: Refresh updates the Tonight page. Run the Planner ("Plan"). Search a city in Settings.
 5. Settings > "Run engine check" reports NumPy timings (proves NumPy is bundled).

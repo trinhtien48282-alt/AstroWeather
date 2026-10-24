@@ -10,12 +10,12 @@
 #                                where Astropy is not installed: the "High-precision positions" switch is disabled.
 import os
 
-from PyInstaller.utils.hooks import collect_data_files
-
 WITH_ASTROPY = os.environ.get("ASTROWEATHER_WITH_ASTROPY") == "1"
 CONSOLE = os.environ.get("ASTROWEATHER_CONSOLE") == "1"
 
-datas = collect_data_files("customtkinter")  # customtkinter loads its theme .json files, fonts and assets from its package folder
+datas = [(os.path.join(SPECPATH, "assets"), "assets")]
+if os.path.isdir(os.path.join(SPECPATH, "data")):
+    datas.append((os.path.join(SPECPATH, "data"), "data"))
 binaries = []
 hiddenimports = []
 excludes = []
@@ -52,6 +52,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=CONSOLE,
+    icon="assets/astroweather.ico",
 )
 coll = COLLECT(
     exe,

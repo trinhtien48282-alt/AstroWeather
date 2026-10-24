@@ -498,4 +498,4 @@ Update this section as the refactor progresses.
 
 Current status:
 
-**Phase 0 / Initial inspection unless repository evidence shows otherwise.**
+**Stages 1-8 done: config, astro, astronomy, weather, planner, gui and the PyInstaller spec are extracted. The packaged build is not yet verified on Windows (see BUILDING.md).**
